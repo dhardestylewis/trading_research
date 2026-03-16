@@ -42,6 +42,9 @@ import numpy as np
 import pandas as pd
 import yaml
 
+import sys
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
+
 from src.utils.logging import get_logger
 
 log = get_logger("canary_tick")

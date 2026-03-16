@@ -26,6 +26,9 @@ import pandas as pd
 import yaml
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+import sys
+
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 log = logging.getLogger("canary_tabpfn")

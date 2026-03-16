@@ -21,10 +21,10 @@ from pathlib import Path
 
 
 def main():
-    project_dir = Path(__file__).resolve().parent
+    project_dir = Path(__file__).resolve().parent.parent.parent
     python_exe = sys.executable
-    script = project_dir / "canary_tick.py"
-    log_file = project_dir / "canary_tick.log"
+    script = project_dir / "scripts" / "canaries" / "canary_tick.py"
+    log_file = project_dir / "logs" / "canary_tick.log"
 
     task_name = "TradingCanaryTick"
 
