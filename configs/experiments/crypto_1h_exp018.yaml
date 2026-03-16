@@ -1,0 +1,54 @@
+experiment_name: "exp018_rv_rule_audit"
+
+data:
+  # Re-use exp017 outputs
+  exp017_trades_path: "data/processed/exp017_rv_locked/all_trades.parquet"
+  panel_path: "data/processed/panel_expanded/panel.parquet"
+  processed_dir: "data/processed/exp018_rv_audit"
+  rv_pairs:
+    - ["SOL", "BTC"]
+    - ["APT", "SUI"]
+    - ["ETH", "BTC"]
+
+spread:
+  definitions: ["raw_ratio", "log_spread", "beta_adjusted", "zscore"]
+  beta_lookback: 72
+  zscore_lookback: 72
+
+events:
+  vol_expansion:
+    atr_window: 14
+    baseline_window: 72
+    multiplier: 2.0
+  range_breakout:
+    window: 72
+
+audit:
+  # Deduplication: min bars between entries for same (pair, rule, spread_type)
+  min_gap_bars: 12
+  # Fraction of forward-window overlap to consider "duplicate"
+  overlap_threshold: 0.5
+
+regression_rule:
+  lookback: 48
+  min_obs: 36
+  lags: [1, 2, 4, 8]
+  prediction_threshold: 0.0   # any non-zero prediction triggers signal
+
+execution:
+  holding_horizons_hours: [12, 24, 48]
+  stop_loss_bps: 200
+  take_profit_bps: 300
+  exit_at_horizon: true
+  fee_bps_per_leg: 4.5
+  slippage_bps_per_leg: 3.0
+  total_round_trip_bps: 30.0
+  max_leg_delay_bars: 2
+  leg_slip_multiplier: 1.5
+
+gates:
+  # Corrected gates — pair-level, not combo-level
+  min_pairs: 2
+  min_non_overlapping_trades: 100
+  pair_level_median_net_bps: 0        # must be > 0
+  pair_level_mean_floor_bps: -10      # mean must exceed this (allows marginal)

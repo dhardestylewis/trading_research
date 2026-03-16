@@ -1,0 +1,130 @@
+# ═══════════════════════════════════════════════════════════
+# Exp024: Execution Cost Surface and Alpha-Cost Join
+# Branch verdict: If no joint high-alpha/low-cost bucket has
+#   positive median AND trimmed-mean net markout, the directional
+#   microstructure alpha program is closed.
+# ═══════════════════════════════════════════════════════════
+
+experiment:
+  id: "exp024"
+  name: "Execution Cost Surface and Alpha-Cost Join"
+  type: "cost_surface_alpha_join"
+  description: >
+    Build the short-horizon execution cost surface for BTC/ETH/SOL,
+    then join with exp022/023 alpha scores to test whether any
+    low-cost × high-signal cell yields positive net economics.
+
+universe:
+  venue: "Binance"
+  assets:
+    - "BTC-USDT"
+    - "ETH-USDT"
+    - "SOL-USDT"
+
+data:
+  replay_days: 90
+  live_paper: true
+  resolution: "1s"
+  flow_bar_dir: "data/processed/flow_bars"
+  output_dir: "data/processed/exp024_cost_surface"
+
+horizons:
+  primary:
+    - "1s"
+    - "5s"
+  diagnostic:
+    - "10s"
+
+features:
+  execution_bearing:
+    - "spread_bps"
+    - "spread_percentile"
+    - "bookTicker_bid_ask_change_rate"
+    - "signed_volume_1s"
+    - "signed_volume_5s"
+    - "flow_imbalance"
+    - "trade_burst_intensity"
+    - "vwap_dislocation"
+    - "recent_realized_volatility"
+    - "trade_count"
+    - "top_of_book_size"
+    - "book_imbalance"
+    - "hour_of_day"
+    - "weekend_indicator"
+    - "asset"
+
+models:
+  classes:
+    - "LightGBM"
+    - "CatBoost"
+    - "quantile_baseline"
+  cost_targets:
+    - "shortfall_1s_bps"
+    - "shortfall_5s_bps"
+    - "adverse_markout_1s_bps"
+    - "adverse_markout_5s_bps"
+  optional_direct_targets:
+    - "net_markout_1s_bps"
+    - "net_markout_5s_bps"
+
+execution:
+  fee_bps: 4.0
+  latency_buckets_ms:
+    - 0
+    - 100
+    - 250
+    - 500
+    - 1000
+
+training:
+  train_windows:
+    - "3d"
+    - "7d"
+    - "14d"
+    - "30d"
+  forward_slices:
+    - "1h"
+    - "6h"
+    - "12h"
+    - "24h"
+  walk_forward:
+    min_train_seconds: 259200    # 3 days in seconds
+    step_seconds: 3600           # 1-hour steps
+
+evaluation:
+  metrics:
+    cost_model:
+      - "spearman_corr_shortfall"
+      - "mae_shortfall"
+      - "top_decile_vs_bottom_decile_cost_separation"
+    alpha_cost_join:
+      - "top_bucket_realized_net_markout"
+      - "trimmed_mean_net_markout"
+      - "trade_count"
+
+gates:
+  gate_1_cost_model_usefulness: >
+    At least one model materially beats naive cost baselines
+    on OOS shortfall ranking.
+  gate_2_cost_compression: >
+    At least one low-cost state shows >=50% lower median shortfall
+    or >=several bps reduction vs unconditional baseline.
+  gate_3_alpha_cost_salvage: >
+    At least one asset×horizon shows positive median AND trimmed-mean
+    net markout in a joint high-alpha/low-cost bucket.
+  gate_4_live_paper_consistency: >
+    Live paper cost outcomes align with replayed outcomes within
+    tolerable error band.
+  gate_5_refresh_stability: >
+    A stable training-window/refresh-cadence combination exists
+    for the cost model.
+
+reporting:
+  output_dir: "reports/exp024"
+  tables:
+    - "alpha_cost_gap"
+    - "cost_model_performance"
+    - "low_cost_state_cards"
+    - "alpha_cost_join_comparison"
+    - "freshness"
+    - "replay_vs_live_paper"

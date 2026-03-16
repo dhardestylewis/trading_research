@@ -1,0 +1,33 @@
+experiment_name: "exp014_microstructure"
+
+# Data configuration
+data:
+  exchange_id: "binanceus"
+  bar_size: "1s"               # Using 1-second bars as proxy for tick data
+  start_date: "2026-03-01"     # Small window to keep data size manageable
+  end_date: "2026-03-05"       
+  raw_dir: "data/raw/crypto_1s_exp014"
+  processed_dir: "data/processed/crypto_1s_exp014"
+
+  # Universe: focused on a high-liquidity asset (BTC) and our target deployment asset (SOL)
+  asset_universe:
+    - "BTC/USDT"
+    - "SOL/USDT"
+  asset_labels:
+    "BTC/USDT": "BTC_USDT"
+    "SOL/USDT": "SOL_USDT"
+
+# Markout configuration
+markouts:
+  horizons_sec: [1, 5, 30, 300]   # 1s, 5s, 30s, 5m
+
+# Queue position assumptions
+execution:
+  queue_haircut_bps: [0.0, 0.5, 1.0, 2.0] # Haircut in bps applied to passive fill price
+  fee_bps_passive: 0.0                    # Binance zero-fee passive (or zero maker tier)
+  fee_bps_aggressive: 4.5                 # Binance taker fee (approx 4.5 bps for VIP)
+
+# Go/No-go gates
+gates:
+  min_net_expectancy_bps: 2.0
+  min_trades_per_day: 10

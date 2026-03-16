@@ -1,0 +1,39 @@
+# ── Data Ingestion Configuration (exp021) ──────────────────────
+# Coordinates ingestion for new Alpha, Execution, and Context sources.
+
+ingestion:
+  schedule:
+    interval_hours: 1
+    jitter_minutes: 5
+
+  # A. Alpha-Bearing
+  alpha_sources:
+    coinbase_l2:
+      enabled: true
+      symbols: ["SOL-USD", "BTC-USD", "ETH-USD", "APT-USD", "SUI-USD"]
+      channels: ["level2", "ticker", "matches"]
+    hyperliquid_perps:
+      enabled: true
+      fetch_funding: true
+      fetch_basis: true
+    geckoterminal:
+      enabled: true
+      networks: ["solana", "ethereum", "aptos", "sui"]
+      min_pool_liquidity: 500000
+
+  # B. Execution-Bearing
+  execution_sources:
+    binance_public_archive:
+      enabled: true
+      data_types: ["aggTrades", "trades", "klines"]
+      symbols: ["SOLUSDT", "BTCUSDT", "ETHUSDT", "APTUSDT", "SUIUSDT"]
+
+  # C. Context-Only
+  context_sources:
+    defillama:
+      enabled: true
+      metrics: ["tvl", "fees", "revenue", "dex_volumes"]
+    dune:
+      enabled: true
+      queries:
+        - "2504620" # Example query ID for major token unlocks or flows

@@ -1,0 +1,42 @@
+# exp029: Expanded Foundation Universe
+# Test TabPFN top-decile edge across additional horizons and the full asset set
+experiment_name: exp029
+parent: exp027
+
+data:
+  panel_path: data/processed/panel_expanded/panel.parquet
+  processed_dir: data/processed/panel_expanded
+  symbols:
+    - BTC-USD
+    - ETH-USD
+    - SOL-USD
+    - AVAX-USD
+    - APT-USD
+    - NEAR-USD
+    - SUI-USD
+
+targets:
+  horizons: [4, 8, 12]  # Test 4h, 8h, and 12h
+  target_col_prefix: fwd_ret
+
+features:
+  pca_components: 90
+
+walk_forward:
+  train_days: 14
+  test_days: 14
+  embargo_days: 2
+  max_train_samples: 1000
+
+models:
+  challengers:
+    - TabPFNTopDecile
+
+evaluation:
+  top_decile_only: true
+  friction_bps: 14
+  min_trades_per_cell: 100
+  min_robust_net_bps: 5.0
+
+kill_criteria:
+  - "No asset×horizon cell shows net expectancy > 5 bps in top decile"

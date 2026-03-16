@@ -1,0 +1,73 @@
+experiment_id: crypto_1h_exp013
+inherits_from: crypto_1h_exp012
+objective: >
+  Magnitude Model — train models ONLY inside cells identified by
+  exp011 (gross-move atlas) and validated by exp012 (passive realism).
+
+  THIS IS A SCAFFOLD ONLY. No code will be written until exp011/012
+  identify viable cells. If they don't, this experiment does not run.
+
+# ═══════════════════════════════════════════════════════════
+# ⚠️  STATUS: SCAFFOLD — NOT YET RUNNABLE
+# ═══════════════════════════════════════════════════════════
+status: scaffold
+depends_on:
+  - crypto_1h_exp011  # must pass kill gate
+  - crypto_1h_exp012  # must show positive net expectancy
+
+# ── Target families (when activated) ────────────────────
+# The next target should NOT be binary profitability.
+#
+# Option A: regression on forward return (bps)
+#   y = fwd_ret_bps
+#
+# Option B: large-move exceedance
+#   y = 1[fwd_gross_ret > 40 bps]
+#
+# Option C: two-stage
+#   Stage 1: P(large_move)
+#   Stage 2: E(move_size | large_move)
+#   Combined: P(large_move) × E(size | large_move)
+#
+target_families:
+  regression:
+    target: fwd_ret_bps
+    loss: mse
+    metric: mean_gross_bps_of_top_decile
+
+  exceedance:
+    target: fwd_gross_gt_40bps
+    threshold_bps: 40.0
+    loss: binary_crossentropy
+    metric: precision_at_threshold
+
+  two_stage:
+    stage1_target: fwd_gross_gt_40bps
+    stage2_target: fwd_ret_bps
+    stage2_filter: fwd_gross_gt_40bps == 1
+    metric: expected_gross_conditional
+
+# ── Metrics that matter ─────────────────────────────────
+# NOT generic AUC or calibration.
+metrics:
+  - gross_bps_of_selected_trades
+  - net_bps_after_conservative_friction
+  - fraction_clearing_friction_hurdle
+  - trade_count
+  - live_paper_feasibility
+
+# ── What this experiment will NOT track ─────────────────
+excluded_metrics:
+  - generic_auc
+  - generic_calibration
+  - rank_spread_without_portfolio_construction
+
+# ── Data ────────────────────────────────────────────────
+data_config: configs/data/crypto_atlas.yaml
+feature_config: configs/features/baseline_features_v1.yaml
+
+# ── Reporting ───────────────────────────────────────────
+reporting:
+  output_dir: reports/exp013
+  make_plots: true
+  first_table: gross_bps_distribution  # program rule carries forward

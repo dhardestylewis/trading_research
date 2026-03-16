@@ -1,0 +1,58 @@
+experiment_name: "exp017_direction_locked_rv"
+
+data:
+  panel_path: "data/processed/panel_expanded/panel.parquet"
+  processed_dir: "data/processed/exp017_rv_locked"
+  rv_pairs:
+    - ["SOL", "BTC"]
+    - ["APT", "SUI"]
+    - ["ETH", "BTC"]
+
+spread:
+  definitions: ["raw_ratio", "log_spread", "beta_adjusted", "zscore"]
+  beta_lookback: 72
+  zscore_lookback: 72
+  zscore_entry_threshold: 2.0
+
+events:
+  vol_expansion:
+    atr_window: 14
+    baseline_window: 72
+    multiplier: 2.0
+  range_breakout:
+    window: 72
+
+direction_rules:
+  - name: "spread_breakout"
+    type: "breakout"
+    window: 72
+  - name: "spread_mean_reversion"
+    type: "mean_reversion"
+    zscore_threshold: 2.0
+  - name: "vol_compression_breakout"
+    type: "vol_breakout"
+    compression_window: 24
+    expansion_multiplier: 1.5
+  - name: "spread_momentum"
+    type: "momentum"
+    fast_window: 12
+    slow_window: 48
+
+execution:
+  holding_horizons_hours: [12, 24, 48]
+  stop_loss_bps: 200
+  take_profit_bps: 300
+  exit_at_horizon: true
+
+  fee_bps_per_leg: 4.5
+  slippage_bps_per_leg: 3.0
+  total_round_trip_bps: 30.0
+
+  max_leg_delay_bars: 2
+  leg_slip_multiplier: 1.5
+
+gates:
+  min_pairs: 2
+  min_trades_per_pair: 100
+  min_median_net_spread_bps: 40
+  min_hit_rate: 0.40

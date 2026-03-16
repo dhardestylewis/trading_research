@@ -1,0 +1,44 @@
+experiment_id: crypto_1h_exp012
+inherits_from: crypto_1h_exp011
+objective: >
+  Passive Realism — take the best cells from exp011 and test whether
+  passive entry can reduce effective round-trip cost enough that a
+  weak but real gross move becomes net-positive.
+
+# ── Data ─────────────────────────────────────────────────
+# Reuses the same atlas universe and panel from exp011
+data_config: configs/data/crypto_atlas.yaml
+feature_config: configs/features/baseline_features_v1.yaml
+
+# ── Input from exp011 ───────────────────────────────────
+# The runner will load exp011's ranked atlas and select
+# viable cells (or all cells if you want the full picture)
+exp011_atlas: reports/exp011/tables/gross_move_atlas_ranked.csv
+
+# ── Passive entry grid ──────────────────────────────────
+passive_grid:
+  offset_bps: [0.0, 5.0, 10.0, 15.0, 20.0]
+  queue_haircuts: [0.0, 0.25, 0.50]
+  # Passive pays ~30% of market friction (maker rebate assumption)
+  passive_cost_multiplier: 0.3
+
+# ── Horizons ────────────────────────────────────────────
+horizons:
+  - bars: 1
+    label: 1h
+
+# ── Friction ────────────────────────────────────────────
+friction:
+  market_round_trip_bps: 30.0
+
+# ── Kill gate ───────────────────────────────────────────
+kill_gate:
+  # At least 2 asset×regime cells must show positive net expectancy
+  # under conservative passive assumptions (50% haircut)
+  min_net_positive_cells: 2
+  haircut_for_gate: 0.50
+
+# ── Reporting ───────────────────────────────────────────
+reporting:
+  output_dir: reports/exp012
+  make_plots: true

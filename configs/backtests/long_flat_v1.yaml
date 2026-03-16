@@ -1,0 +1,11 @@
+policy_type: long_flat_threshold
+thresholds: [0.50, 0.55, 0.60, 0.65]
+max_gross_exposure: 1.0
+
+costs:
+  zero:
+    one_way_bps: 0
+  base:
+    one_way_bps: 15
+  punitive:
+    one_way_bps: 35

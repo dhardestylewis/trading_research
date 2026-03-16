@@ -1,0 +1,117 @@
+experiment_name: "exp019_latent_cell_discovery"
+objective: >
+  Use ML to discover latent trade-state families that maximize net economic
+  validity. Replace hand-authored rule families (exp014-018) with data-driven
+  state discovery under the full money equation.
+
+# ── Data ─────────────────────────────────────────────────
+data:
+  panel_path: "data/processed/panel_expanded/panel.parquet"
+  processed_dir: "data/processed/exp019_latent_cells"
+  asset_universe:
+    - SOL-USD
+    - BTC-USD
+    - ETH-USD
+    - APT-USD
+    - SUI-USD
+    - NEAR-USD
+    - AVAX-USD
+    - DOT-USD
+
+# ── Horizons ─────────────────────────────────────────────
+horizons:
+  - bars: 1
+    label: "1h"
+  - bars: 4
+    label: "4h"
+  - bars: 12
+    label: "12h"
+
+# ── Extended feature config ──────────────────────────────
+features:
+  # Spread / price features
+  return_lags: [1, 2, 4, 8, 24]
+  vol_windows: [6, 12, 24, 48]
+  vol_of_vol_window: 24
+  bollinger_window: 24
+  compression_trailing_window: 72
+
+  # Microstructure proxies
+  amihud_window: 24
+  vwap_deviation_window: 12
+
+  # Momentum
+  cross_asset_momentum_window: 24
+  momentum_divergence_windows: [6, 24]
+
+  # Calendar — sin/cos encoded
+  calendar_encode: true
+
+  # Winsorize
+  winsorize: true
+  winsorize_limits: [0.005, 0.995]
+
+# ── State discovery ──────────────────────────────────────
+state_discovery:
+  method: "gmm"               # "gmm" or "kmeans"
+  n_clusters: [8, 12]          # start small; expand if needed
+  min_cluster_frac: 0.02      # clusters < 2% of data are dropped
+  normalize: true              # z-score features before clustering
+  random_state: 42
+  stop_if_all_viable: true    # stop sweep if all clusters viable at current n
+
+# ── Multi-head model ─────────────────────────────────────
+model:
+  type: "lightgbm"
+  targets:
+    - name: "gross_move_bps"
+      description: "Forward return in bps over horizon"
+    - name: "exec_loss_bps"
+      description: "Estimated execution shortfall in bps"
+    - name: "net_move_bps"
+      description: "Net return after exec loss and fees"
+  params:
+    num_leaves: 31
+    max_depth: 5
+    learning_rate: 0.03
+    n_estimators: 300
+    min_child_samples: 100
+    subsample: 0.8
+    colsample_bytree: 0.7
+    reg_alpha: 0.1
+    reg_lambda: 1.0
+    verbose: -1
+  early_stopping_rounds: 20
+  walk_forward:
+    min_train_bars: 720       # 30 days minimum training
+    val_bars: 168             # 7 days validation
+    step_bars: 720            # 30-day steps (~33 folds for scoping speed)
+
+# ── Execution / friction ─────────────────────────────────
+execution:
+  fee_bps_per_leg: 4.5
+  slippage_bps_per_leg: 3.0
+  round_trip_bps: 30.0
+  stress_multiplier: 1.5     # stress test at 45 bps RT
+
+# ── Kill gates ───────────────────────────────────────────
+gates:
+  min_non_overlapping_trades: 100
+  min_gap_bars: 4             # temporal dedup: min bars between entries
+  median_net_bps_floor: 0.0   # median must be > 0
+  trimmed_mean_trim: 0.10     # 10% trim on each side
+  trimmed_mean_floor_bps: 0.0 # trimmed mean must be > 0
+  min_assets: 2               # cell must span ≥2 assets
+  max_single_asset_frac: 0.70 # no single asset > 70%
+  stress_test_pass: true      # must be positive under 1.5× friction
+
+# ── Cell extraction ──────────────────────────────────────
+cell_extraction:
+  max_tree_depth: 3           # shallow decision tree for interpretability
+  n_prototypes: 5             # example timestamps per cell
+  top_cells: 10               # report top N cells
+
+# ── Reporting ────────────────────────────────────────────
+reporting:
+  output_dir: "reports/exp019"
+  make_plots: true

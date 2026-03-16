@@ -1,0 +1,52 @@
+# Exp022: Short-Horizon Flow Pilot
+# Tests whether trade-flow imbalance and signed volume can predict short-term gross markout
+
+experiment_name: "exp022_short_horizon_flow"
+dataset:
+  universe: ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+  start_date: "2026-02-23"
+  end_date: "2026-03-15"
+  frequency: "1S"
+  data_dir: "data/processed/flow_bars"
+
+features:
+  flow_imbalance: true
+  trade_intensity: true
+  vwap_dislocation: true
+  signed_volume_shock: true
+  
+  # Lag configurations for flow features
+  lags: [1, 5, 10, 30]
+
+targets:
+  - "markout_1s"
+  - "markout_5s"
+  - "markout_30s"
+  - "markout_300s"
+
+model:
+  type: "lightgbm"
+  params:
+    objective: "regression"
+    metric: "rmse"
+    boosting_type: "gbdt"
+    learning_rate: 0.05
+    num_leaves: 31
+    max_depth: -1
+    feature_fraction: 0.8
+    bagging_fraction: 0.8
+    bagging_freq: 5
+    n_estimators: 200
+  validation:
+    method: "walk_forward"
+    train_size_days: 14
+    test_size_days: 2
+    step_size_days: 1
+
+evaluation:
+  metrics:
+    - "spearman_corr"
+    - "sign_accuracy"
+  gate_thresholds:
+    min_oos_corr_5s: 0.02
+    min_sign_acc_5s: 0.51

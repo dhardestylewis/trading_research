@@ -1,0 +1,89 @@
+experiment_id: crypto_1h_exp005
+inherits_from: crypto_1h_exp004
+
+data_config: configs/data/crypto_1h.yaml
+feature_config: configs/features/baseline_features_v1.yaml
+label_config: configs/labels/horizon_labels_v1.yaml
+
+models:
+  - name: lightgbm
+    config: configs/models/lightgbm_v1.yaml
+
+backtest_config: configs/backtests/long_flat_v1.yaml
+
+validation:
+  scheme: rolling_walk_forward
+  train_days: 180
+  val_days: 30
+  test_days: 30
+  step_days: 30
+  embargo_bars: 4
+
+# ── exp005: Live Fill Validation ─────────────────────────────────
+#
+# Single policy object:
+#   pooled-train SOL-deploy + sep_3bar_t0.55 + NOT_rebound
+#
+# This experiment stress-tests the production-candidate policy
+# under queue/priority penalty before paper deployment.
+
+target_asset: SOL-USD
+target_model: lightgbm
+
+# ── Policy specification ─────────────────────────────────────────
+policy:
+  training_mode: pooled_train_sol_deploy
+  threshold: 0.55
+  sep_gap: 3
+  regime_gate: NOT_rebound
+  cost_bps: 15.0
+
+# ── Entry modes ──────────────────────────────────────────────────
+entry_modes:
+  - name: marketable_near_open
+    type: market
+    description: "Marketable order near open of next bar"
+  - name: passive_open_minus_5bps
+    type: passive_limit
+    offset_bps: 5.0
+    description: "Passive limit at open - 5 bps"
+  - name: passive_open_minus_10bps
+    type: passive_limit
+    offset_bps: 10.0
+    description: "Passive limit at open - 10 bps"
+
+# ── Queue / Priority Penalty Stress Test ─────────────────────────
+queue_penalty:
+  # Fill probability haircuts: what fraction of simulated fills
+  # actually execute (accounts for queue position, priority)
+  fill_probability_haircuts: [1.0, 0.8, 0.6, 0.4]
+  # Additional slippage penalty on top of limit price (bps)
+  fill_price_penalties_bps: [0.0, 2.0, 5.0]
+
+# ── Evaluation metrics ───────────────────────────────────────────
+evaluation_metrics:
+  - realized_fill_rate
+  - realized_slippage_vs_simulated
+  - adverse_selection_after_fill
+  - cancel_rate
+  - missed_trade_opportunity_cost
+  - fold_level_pnl_stability
+
+# ── Go / No-Go Gates ────────────────────────────────────────────
+go_no_go:
+  # Minimum Sharpe under 80% fill haircut + 2 bps price penalty
+  min_stressed_sharpe: 3.0
+  # Minimum fill rate at preferred entry mode
+  min_fill_rate: 0.50
+  # Maximum adverse selection (mean loss within 15min of fill)
+  max_adverse_selection_bps: 20.0
+  # Minimum fold profitability under stress
+  min_fold_profitability: 0.70
+
+# ── Predictions source ───────────────────────────────────────────
+exp004_predictions: data/artifacts/predictions/exp004_sol_predictions.parquet
+
+reporting:
+  output_dir: reports/exp005
+  make_plots: true
+  save_predictions: true

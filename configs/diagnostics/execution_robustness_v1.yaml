@@ -1,0 +1,23 @@
+diagnostic_name: execution_robustness_v1
+
+delays: [0, 1, 2]
+
+cost_regimes:
+  zero: 0
+  base: 15
+  mild_worse: 20
+  punitive: 35
+
+fill_modes:
+  taker:
+    description: "Full taker cost applied"
+    cost_multiplier: 1.0
+    slippage_bps: 0
+  reduced_cost:
+    description: "Pseudo-maker/taker blend"
+    cost_multiplier: 0.667  # ~10 bps effective on 15 bps base
+    slippage_bps: 0
+  adverse_fill:
+    description: "Taker + additional slippage"
+    cost_multiplier: 1.0
+    slippage_bps: 5

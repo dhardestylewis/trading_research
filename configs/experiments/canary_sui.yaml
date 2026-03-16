@@ -1,0 +1,35 @@
+# SUI shadow paper-trading lane
+# Inherits signal policy from exp008 universe expansion
+# Status: SHADOW (log-only, no live capital)
+
+experiment_id: canary_sui_shadow
+inherits_from: crypto_1h_exp008
+
+target_asset: SUI-USD
+lane_type: shadow  # shadow = log predictions only, no execution
+
+data_config: configs/data/crypto_1h_expanded.yaml
+
+policy:
+  training_mode: pooled_train_sui_deploy
+  threshold: 0.55
+  sep_gap: 3
+  regime_gate: NOT_rebound
+  cost_bps: 15.0
+
+# Model to use (same as SOL canary)
+models:
+  - name: lightgbm
+    config: configs/models/lightgbm_v1.yaml
+
+# Logging
+logging:
+  log_dir: data/canary/sui_shadow
+  log_signals: true
+  log_trades: false  # shadow only, no execution
+  alert_on_signal: false
+
+# Notes
+# - SUI has 203 trades, Sharpe 4.48, 8.2 bps in exp008
+# - More robust than APT on sample grounds
+# - Goal: validate transportability in live conditions

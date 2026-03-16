@@ -1,0 +1,431 @@
+# ═══════════════════════════════════════════════════════════
+# Research Status — Single source of truth for branch status
+# Updated: 2026-03-15 (post exp017 closure — strategic FAIL)
+# ═══════════════════════════════════════════════════════════
+
+experiments:
+  exp001:
+    name: "Baseline crypto 1h pipeline"
+    status: closed        # historical baseline
+    verdict: "Established initial pipeline and signal detection"
+
+  exp002:
+    name: "Signal diagnosis"
+    status: closed
+    verdict: "Characterized score deciles, regime, asset isolation"
+
+  exp003:
+    name: "SOL execution validity"
+    status: closed
+    verdict: "Corrected denominator bugs, tested fill proxies and horizons"
+
+  exp004:
+    name: "Execution design research"
+    status: closed
+    verdict: "Reconciliation, intrabar entry, passive feasibility, signal decay"
+
+  exp005:
+    name: "Live fill validation"
+    status: closed
+    verdict: "Queue priority stress test, fill simulation scaffolding"
+
+  exp006:
+    name: "Paper-trade validation"
+    status: closed
+    verdict: "Signal-level logging and execution quality comparison"
+
+  exp007:
+    name: "Continuation research"
+    status: closed
+    verdict: "Intermediate stepping stone"
+
+  exp008:
+    name: "Capacity research"
+    status: closed
+    verdict: "Multi-horizon, universe expansion, calibration, execution-aware alpha"
+
+  exp009:
+    name: "Dilution study"
+    status: invalidated    # metric bug — reported bps were not true fwd_ret_1h
+    invalidation_date: 2026-03-15
+    invalidation_corrected_by: exp010
+    verdict: >
+      Headline economics (+34.3, +37.4, +43.1 bps) are measurement
+      artifacts. All deployment conclusions superseded. Retained for
+      research provenance only.
+
+  exp010:
+    name: "Family canary deployment validation"
+    status: closed
+    verdict: >
+      Family deployment thesis falsified under corrected metric.
+      All four go/no-go gates fail. Signal magnitude insufficient
+      to survive ~30 bps round-trip cost. Branch closed for deployment.
+
+# ── Deployment lanes ─────────────────────────────────────────
+deployment:
+  sol_family_rollout:
+    status: frozen
+    reason: "exp010 — all gates fail"
+
+  sui_primary_lane:
+    status: frozen
+    reason: "exp010 — positive fold-level signal but negative after execution"
+
+  near_secondary_lane:
+    status: frozen
+    reason: "exp010 — negative at both fold and execution level"
+
+  apt_research_lane:
+    status: frozen
+    reason: "exp010 — marginal fold signal, negative after execution"
+
+# ── Infrastructure ───────────────────────────────────────────
+infrastructure:
+  canary_tick:
+    status: infra_only     # systems canary, not capital candidate
+    asset: SOL-USD
+    purpose: "Infrastructure validation only — no live capital mandate"
+
+# ── Next research direction ─────────────────────────────────
+# Market structure and execution realism screening
+next_branch:
+  mandate: >
+    Where does the market leave enough executable move on the table that prediction is worth anything?
+    Keep research anchored to the full money equation:
+    [ monetizable edge = gross move - execution loss - fees ]
+  kill_criterion: >
+    No modeling branch starts until a non-ML screening branch shows gross move size and execution mechanics that plausibly leave positive net expectancy after conservative friction.
+
+  exp011:
+    name: "Gross-Move Atlas"
+    status: closed
+    type: non_ml_screening
+    universe: 20 curated crypto assets (binance)
+    horizons: [1h]  # 15m/4h addable later
+    config: configs/experiments/crypto_1h_exp011.yaml
+    runner: run_exp011.py
+
+  exp012:
+    mandate: "Test passive limit order execution realism on viable gross cells."
+    status: "Completed. Kill gate triggered."
+    conclusions: >
+      Hard FAIL. Out of 676 gross-viable cells found in exp011, 0 survived
+      passive modeling. Adverse selection completely wiped out the gross edge
+      when simulating realistic limit touches and queue positioning. This market
+      cannot be monetized with simplistic entry heuristics on 1h horizons.
+    type: passive_fill_study
+    config: configs/experiments/crypto_1h_exp012.yaml
+    runner: run_exp012.py
+
+  exp013:
+    status: cancelled
+    reason: "Adverse selection identified in exp012. No prediction modeling starts until execution loss is solved."
+
+  exp014:
+    name: "Microstructure Feasibility Map"
+    status: closed
+    type: microstructure_screening
+    purpose: "Determine whether any execution style is viable once fill toxicity is modeled directly."
+    output: "Touch-to-fill curves, queue haircut curves, markout tables, passive vs aggressive shortfall tables"
+    verdict: >
+      Real negative result. Tick-level Binance trade archives show strongly
+      negative short-horizon markouts after passive fills: BTC ~-6.5 bps,
+      SOL ~-7.7 bps over 1,177 fills. Kills naive passive 1h entry logic.
+
+  exp015:
+    name: "Catalyst Magnitude Atlas"
+    status: closed
+    type: event_driven_screening
+    purpose: "Identify event states where gross move size is genuinely large."
+    output: "Gross move distribution by event state, exceedance tables over 30/50/80/100 bps, trade count and stability by state"
+    verdict: >
+      Catalyst states with large conditional moves identified. 12h median max
+      excursion 300-400+ bps in certain event windows, high exceedance over
+      100 bps. Magnitude is not absent from the market.
+
+  exp016:
+    name: "Instrument / Relative-Value Screening"
+    status: closed
+    type: instrument_screening
+    purpose: "Test whether monetizable edge lives in perps, basis, or spread states rather than outright direction."
+    output: "Gross and net expectancy by instrument type, markout and funding-adjusted return tables"
+    verdict: >
+      High-promise screening result. RV pair excursions are large (APT/SUI
+      ~754 bps, SOL/BTC ~570 bps, ETH/BTC ~326 bps). But direction was
+      chosen ex post and primary metric was max excursion, not realized PnL.
+      Measures opportunity, not strategy economics. Pending direction-locked
+      execution validation in exp017.
+
+  exp017:
+    name: "Direction-Locked RV Execution Study"
+    status: closed
+    closed_date: 2026-03-15
+    type: rv_execution_validation
+    purpose: >
+      Test whether exp016 large RV excursions survive when converted into
+      fully specified tradable rules with direction locked ex ante, two-leg
+      execution costs, and realistic holding horizons.
+    config: configs/experiments/crypto_1h_exp017.yaml
+    runner: run_exp017.py
+    verdict: >
+      Strategic FAIL. Excursion opportunity does not translate into realized
+      net spread PnL under current direction-locking rules. All 9 pair×horizon
+      cells have negative median realized net spread return. 102 of 117
+      rule×pair×spread×horizon combos are negative. The reported top-level
+      PASS was driven by a bad aggregation rule that selected cherry-picked
+      combo-level best rows (with identical medians across horizons suggesting
+      trade deduplication artifacts) rather than pair-level economics.
+    red_flags:
+      - "Identical medians across 12/24/48h horizons for top combos — likely same trades reused"
+      - "15/117 combos positive vs 102/117 negative"
+      - "Best combos have small trade counts (281-437) and very high medians vs deeply negative means"
+      - "Pair-level excursion→realized comparison uniformly negative"
+    pair_level_results:
+      SOL_BTC: "excursion 190.8→439.2 bps, realized -40.7→-59.6 bps"
+      APT_SUI: "excursion 367.6→734.2 bps, realized -153.0→-247.3 bps"
+      ETH_BTC: "excursion 90.1→212.3 bps, realized -35.2→-45.7 bps"
+    gate_postmortem: >
+      The kill gates were wrong for this experiment family. The primary gate
+      used combo-level "best median > 40 bps" which is vulnerable to search
+      artifacts. Correct gate should require: ≥2 pairs, ≥100 non-overlapping
+      trades, median realized net spread return > 0 at pair level, and mean
+      realized net spread return > friction buffer.
+
+  exp018:
+    name: "RV Rule Audit"
+    status: closed
+    closed_date: 2026-03-15
+    type: diagnostic_salvage
+    purpose: >
+      Diagnostic salvage branch. Determine whether exp017 negative results are
+      caused by: (a) crude sign rules that fail to identify correct spread
+      direction, (b) horizon-overlap artifacts inflating apparent robustness,
+      (c) bad hedge-ratio choice, or (d) fundamentally untradeable RV
+      opportunity with simple ex-ante direction locking.
+    depends_on: exp017
+    config: configs/experiments/crypto_1h_exp018.yaml
+    runner: run_exp018.py
+    verdict: >
+      KILL. Neither heuristic nor regression-based direction rules produce
+      positive pair-level economics. Deduplication reduced 95,190 trades to
+      11,298 (88.1% were overlapping/duplicated). 64.1% of horizon pairs were
+      statistically identical (KS test), confirming stop/TP fires before
+      shortest horizon. After dedup, all 3 pairs remain negative at pair level:
+      APT/SUI median -235 bps, ETH/BTC median -35 bps, SOL/BTC median -42 bps.
+      Regression rule also negative: APT/SUI -40 bps, ETH/BTC -37 bps,
+      SOL/BTC -41 bps. The RV excursion opportunity is fundamentally not
+      capturable with ex-ante direction locking. RV directional branch closed.
+    results:
+      dedup: "95,190 → 54,096 (horizon collapse) → 11,298 (temporal dedup)"
+      horizon_audit: "64.1% of horizon pairs statistically identical"
+      central_tendency: "0/3 pairs positive median, 4/39 combos median>0 mean<0"
+      regression_vs_heuristic: "Regression slightly less negative but still FAIL"
+      gate_verdict: "KILL for both rule families"
+
+  # ── RV directional branch formally closed ────────────────────
+  rv_branch_closure:
+    status: closed
+    closed_date: 2026-03-15
+    scope: "exp014 through exp018"
+    reason: >
+      Manual rule families have served their diagnostic purpose:
+      passive 1h entry is toxic, family directional deployment failed,
+      excursion statistics do not map to strategy economics, and hand-
+      authored RV direction rules fail even after audit. The bottleneck
+      is now state discovery under a good evaluator, not more manual slicing.
+    successor: exp019
+
+  exp019:
+    name: "Latent Cell Discovery"
+    status: completed
+    started_date: 2026-03-15
+    completed_date: 2026-03-15
+    type: ml_state_discovery
+    purpose: >
+      Use ML to discover latent trade-state families that maximize net
+      economic validity. Three-layer approach: (1) extended features +
+      GMM/KMeans clustering for latent state discovery, (2) multi-head
+      LightGBM predicting gross move / execution loss / net move under
+      the full money equation, (3) shallow decision tree cell extraction
+      for interpretability. Hand-authored families used only as benchmark
+      baselines, not as the main search mechanism.
+    config: configs/experiments/crypto_1h_exp019.yaml
+    runner: run_exp019.py
+    depends_on: "exp014-018 (diagnostic lessons)"
+    verdict: >
+      KILL. All 8 discovered latent states produce negative median net
+      expectancy (-29 to -91 bps). Gross move prediction is near-random
+      (OOF corr 0.05 at 1h, 0.09 at 12h). Exec loss is highly predictable
+      (0.87 corr) but cannot be avoided — it IS the market. Top features
+      are all volatility/liquidity, no directional signal. The execution
+      cost barrier at 1h crypto horizons is not surmountable with tabular
+      ML on OHLCV features alone.
+    results:
+      best_cell_median_net_bps: -29.1
+      worst_cell_median_net_bps: -91.4
+      gross_oof_corr_1h: 0.049
+      exec_loss_oof_corr: 0.868
+      net_oof_corr_1h: 0.195
+      cells_passing_gates: 0
+      cells_total: 8
+    key_design:
+      layer_1: "Extended features → GMM/KMeans clustering"
+      layer_2: "Multi-head LightGBM (gross/exec_loss/net)"
+      layer_3: "Shallow decision tree cell extraction"
+    kill_gates:
+      - "≥100 non-overlapping trades per cell"
+      - "Positive median net expectancy"
+      - "Positive trimmed-mean (10%) net expectancy"
+      - "≥2 assets represented"
+      - "No single asset >70% of cell"
+      - "Survives 1.5× friction stress test"
+
+  # ── 1h OHLCV alpha program formally closed ───────────────────
+  ohlcv_alpha_branch_closure:
+    status: closed
+    closed_date: 2026-03-15
+    scope: "exp001 through exp019"
+    reason: >
+      The terminal negative result of exp019 confirms that the combination
+      of 1h OHLCV features, standard microstructure proxies, and latent-state
+      discovery does not produce enough gross directional edge to overcome
+      execution friction. The bottleneck is the information set at this horizon,
+      not the model capacity or search technique.
+
+  # ── New branch: Execution Cost Modeling ──────────────────────
+  exp020:
+    name: "Execution Cost Surface"
+    status: planned
+    start_date: 2026-03-15
+    type: cost_modeling
+    purpose: >
+      Pivot from directional prediction to execution cost prediction. Turn the
+      highly predictable exec_loss_bps target from exp019 into a production-
+      quality standalone model. Generate expected slippage, toxicity regimes,
+      fill-risk maps, and passive vs aggressive cost surfaces.
+    config: configs/experiments/crypto_1h_exp020.yaml
+    runner: run_exp020.py
+
+  # ── Future alpha branches (New Information Only) ────────────────
+  exp021:
+    name: "New Information Alpha Branch"
+    status: active_data_ingestion
+    start_date: 2026-03-15
+    type: alpha_discovery
+    purpose: >
+      Build scaffolding to ingest new information classes (Binance/Coinbase L2,
+      Hyperliquid perps, DEX liquidity, DefiLlama context, Dune flows). This
+      will serve as the new feature set for the next directional alpha branch.
+    structure:
+      - Alpha-bearing: L2/queue state, funding/basis, DEX liquidity.
+      - Execution-bearing: trade/tick archives, short-term spread.
+      - Context-only: TVL, unlocks, flow events (slow-moving filters).
+
+  exp022:
+    name: "Short-Horizon Flow Pilot"
+    status: active
+    start_date: 2026-03-15
+    type: pilot_ml
+    depends_on: [exp021]
+    purpose: >
+      Test whether trade-flow imbalance, signed volume, and tick-intensity
+      can predict short-horizon gross markout (1s, 5s, 30s, 5m). This is a 
+      pipeline shakedown on the 22-day backfill to answer if flow predicts 
+      short-term direction out-of-sample before execution friction.
+    kill_criterion: "Negative OOS rank correlation on gross markouts at short horizons. Gross direction MUST be predictable before friction."
+    config: configs/experiments/crypto_flow_exp022.yaml
+    runner: run_exp022.py
+
+  exp023:
+    name: "Live Execution-Conditioned Short-Horizon Flow Validation"
+    status: active
+    start_date: 2026-03-15
+    type: live_taker_validation
+    depends_on: [exp022]
+    purpose: >
+      Determine whether short-horizon trade-flow features on Binance can 
+      generate positive top-bucket net markout after realistic taker execution 
+      assumptions, and determine how long the model remains valid before 
+      retraining is needed.
+    kill_criterion: >
+      Fails to beat trivial baselines, positive gross signal does not survive 
+      spread+fees, net signal only exists at zero latency, live paper materially 
+      underperforms replay, or no stable retraining cadence exists.
+    config: configs/experiments/crypto_microstructure_exp023.yaml
+    runner: run_exp023.py
+
+  exp024:
+    name: "Execution Cost Surface and Alpha-Cost Join"
+    status: active
+    start_date: 2026-03-15
+    type: cost_surface_alpha_join
+    depends_on: [exp022, exp023]
+    purpose: >
+      Build and validate short-horizon execution cost surface for BTC/ETH/SOL
+      at 1s-5s, then join with exp022/023 alpha scores to test whether any
+      low-cost × high-signal cell yields positive net economics.
+    kill_criterion: >
+      If no joint high-alpha/low-cost bucket has positive median AND
+      trimmed-mean net markout, the directional microstructure alpha
+      program is closed.
+    config: configs/experiments/crypto_microstructure_exp024.yaml
+    runner: run_exp024.py
+
+  exp025:
+    name: "Event-Conditioned Perp-State Alpha"
+    status: closed
+    type: perp_state_directional
+    depends_on: [exp024]
+    purpose: >
+      Test whether standard tabular models on sparse perp-state feature panels
+      can yield net-positive alpha at 30m-2h horizons after realistic friction.
+    kill_criterion: "Horizons too slow relative to 14bps hurdle; simple tabular models on sparse perp data insufficient."
+    verdict: "FAILED. Horizons provide too little move relative to 14 bps hurdle, and standard Tabular models fail."
+    config: configs/experiments/crypto_exp025.yaml
+    runner: run_exp025.py
+
+  exp026:
+    name: "Rich-State Catalyst Alpha with Strong-Model Challengers"
+    status: closed
+    closed_date: 2026-03-15
+    type: model_capacity_capacity_test
+    depends_on: [exp025]
+    purpose: >
+      The last fair trial for the 'stronger models on richer data' thesis.
+      If materially upgrading both the information set and model class yields a 
+      net-positive, walk-forward-stable asset×horizon×bucket cell after realistic 
+      perp friction.
+    kill_criterion: >
+      Kill if stronger models don't produce a positive net cell, or only produce 
+      it in unstable slices/academic metrics.
+    config: configs/experiments/crypto_exp026.yaml
+    runner: run_exp026.py
+    verdict: >
+      KILL at aggregate level. PyTorch Sequence, Ridge, LightGBM, CatBoost, and 
+      TabPFN severely negative net expectancy at 2h/8h. HOWEVER: TabPFN Decile 9 
+      showed +53 bps (SUI), +17 bps (NEAR), +8 bps (SOL) at the 8h horizon out-of-sample 
+      under strictly constrained inputs.
+
+  exp027:
+    name: "Foundation Top-Decile Edge"
+    status: active
+    start_date: 2026-03-15
+    type: foundation_model_edge_isolation
+    depends_on: [exp026]
+    purpose: >
+      Isolate and rigorously evaluate the 8h top-decile predictive edge discovered 
+      by pre-trained foundation models (TabPFN) in exp026. Determine if the edge 
+      is foundation-exclusive by mapping it against heavy XGBoost baselines and 
+      testing alternative zero-shot temporal models.
+    kill_criterion: >
+      If the Foundation Decile-9 edge does not survive scaling, or if an unrestricted 
+      XGBoost counter-baseline can replicate the edge (proving it's not a foundation 
+      structural advantage).
+    config: configs/experiments/crypto_exp027.yaml
+    runner: run_exp027.py
+
+  effort_allocation:
+    execution_cost_modeling: 80%
+    infrastructure: 20%
+    ohlcv_directional_alpha: 0%        # branch closed

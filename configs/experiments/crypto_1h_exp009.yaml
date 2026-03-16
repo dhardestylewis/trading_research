@@ -1,0 +1,115 @@
+# ══════════════════════════════════════════════════════════
+# ⚠️  STATUS: ECONOMICALLY INVALID
+# ──────────────────────────────────────────────────────────
+#   The "net bps" figures reported by this experiment were
+#   not true forward-return bps.  They were effectively
+#   hit-rate-based, not realized fwd_ret_1h after costs.
+#
+#   Corrected in: exp010 (crypto_1h_exp010.yaml)
+#   Date invalidated: 2026-03-15
+#
+#   All deployment and capacity conclusions derived from
+#   this experiment's headline numbers (+34.3, +37.4,
+#   +43.1 bps) are SUPERSEDED.
+#
+#   This file is retained for research provenance only.
+# ══════════════════════════════════════════════════════════
+
+experiment_id: crypto_1h_exp009
+inherits_from: crypto_1h_exp008
+status: invalidated          # metric bug — corrected in exp010
+invalidation_date: 2026-03-15
+invalidation_reason: >
+  Reported "bps" were not true forward-return bps.
+  Once switched to actual fwd_ret_1h with round-trip cost
+  deduction, all economics turned negative. See exp010.
+objective: >
+  Dilution study — investigate whether universe expansion
+  contaminates SOL edge. Determine optimal training pool
+  composition to preserve SOL while adding transportable assets.
+
+# ── Data configs ─────────────────────────────────────────
+data_config: configs/data/crypto_1h.yaml
+data_config_expanded: configs/data/crypto_1h_expanded.yaml
+feature_config: configs/features/baseline_features_v1.yaml
+label_config: configs/labels/horizon_labels_v1.yaml
+
+models:
+  - name: lightgbm
+    config: configs/models/lightgbm_v1.yaml
+
+backtest_config: configs/backtests/long_flat_v1.yaml
+
+validation:
+  scheme: rolling_walk_forward
+  train_days: 180
+  val_days: 30
+  test_days: 30
+  step_days: 30
+  embargo_bars: 4
+
+# ── Reference policy (frozen from exp005/006) ────────────
+target_asset: SOL-USD
+target_model: lightgbm
+
+policy:
+  training_mode: pooled_train_sol_deploy
+  threshold: 0.55
+  sep_gap: 3
+  regime_gate: NOT_rebound
+  cost_bps: 15.0
+
+# ── North star metric ───────────────────────────────────
+# weekly_PnL = net_bps × trades/week × deployable_notional
+# subject to: min_sample_count, asset-specific robustness
+
+# ── Branch control ───────────────────────────────────────
+branches:
+  run_a: true   # pooled 3-asset → SOL deploy (original baseline)
+  run_b: true   # pooled 8-asset → SOL deploy (current exp008 config)
+  run_c: true   # family-pooled (SOL/APT/SUI/NEAR) → per-asset deploy
+  run_d: false  # per-asset head on shared backbone (future architecture)
+
+# ── Branch A: Original 3-asset pool ─────────────────────
+pool_original:
+  assets: [SOL-USD, BTC-USD, ETH-USD]
+  deploy_on: [SOL-USD]
+
+# ── Branch B: Full 8-asset pool ─────────────────────────
+pool_full:
+  assets: [SOL-USD, BTC-USD, ETH-USD, APT-USD, SUI-USD, NEAR-USD, AVAX-USD, DOT-USD]
+  deploy_on: [SOL-USD]
+
+# ── Branch C: Family-pooled ─────────────────────────────
+pool_family:
+  assets: [SOL-USD, APT-USD, SUI-USD, NEAR-USD]
+  deploy_on: [SOL-USD, APT-USD, SUI-USD, NEAR-USD]
+
+# ── Branch D: Per-asset heads (scaffold only) ───────────
+# Requires architecture change: shared LightGBM backbone
+# + per-asset classification head. Not implemented yet —
+# flagged as future work.
+per_asset_heads:
+  shared_backbone_features: all
+  head_type: logistic  # placeholder
+  status: NOT_IMPLEMENTED
+
+# ── Go / No-Go gates ────────────────────────────────────
+go_no_go:
+  # SOL preservation: family-pool SOL must match or beat original-pool SOL
+  max_sol_degradation_bps: 5.0
+  # Family-pool must keep SOL positive
+  min_sol_net_bps: 0.0
+  # At least 2 assets must be deployable from family pool
+  min_family_deployable_assets: 2
+  # Minimum per-asset sample count for deployment
+  min_trade_count: 30
+
+# ── Predictions source ───────────────────────────────────
+exp001_predictions: data/artifacts/predictions/crypto_1h_exp001_predictions.parquet
+
+# ── Reporting ────────────────────────────────────────────
+reporting:
+  output_dir: reports/exp009
+  make_plots: true
+  save_predictions: true

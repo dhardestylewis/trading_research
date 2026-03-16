@@ -1,0 +1,95 @@
+experiment_id: crypto_1h_exp010
+inherits_from: crypto_1h_exp009
+objective: >
+  Family canary deployment validation — freeze the architecture
+  that worked in exp009 (family-pooled training, asset-specific
+  deployment) and validate across the L1 family. Produce
+  reconciliation appendix resolving exp008/exp009 SOL contradiction.
+
+# ── Data configs ─────────────────────────────────────────
+data_config: configs/data/crypto_1h.yaml
+data_config_expanded: configs/data/crypto_1h_expanded.yaml
+feature_config: configs/features/baseline_features_v1.yaml
+label_config: configs/labels/horizon_labels_v1.yaml
+
+models:
+  - name: lightgbm
+    config: configs/models/lightgbm_v1.yaml
+
+backtest_config: configs/backtests/long_flat_v1.yaml
+
+validation:
+  scheme: rolling_walk_forward
+  train_days: 180
+  val_days: 30
+  test_days: 30
+  step_days: 30
+  embargo_bars: 4
+
+# ── Reference policy (frozen from exp009) ─────────────────
+target_model: lightgbm
+
+policy:
+  training_mode: family_pooled
+  threshold: 0.55
+  sep_gap: 3
+  regime_gate: NOT_rebound
+  cost_bps: 15.0
+
+# ── Family definition ────────────────────────────────────
+family_pool:
+  train_assets: [SOL-USD, SUI-USD, NEAR-USD, APT-USD]
+  deploy_assets: [SOL-USD, SUI-USD, NEAR-USD, APT-USD]
+
+# ── Lane definitions ────────────────────────────────────
+lanes:
+  - name: SOL
+    asset: SOL-USD
+    type: primary
+    entry_mode: market
+    offset_bps: 0.0
+
+  - name: SUI
+    asset: SUI-USD
+    type: primary
+    entry_mode: market
+    offset_bps: 0.0
+
+  - name: NEAR
+    asset: NEAR-USD
+    type: secondary_shadow
+    entry_mode: market
+    offset_bps: 0.0
+
+  - name: APT
+    asset: APT-USD
+    type: research_shadow
+    entry_mode: market
+    offset_bps: 0.0
+
+# ── Reconciliation ───────────────────────────────────────
+reconciliation:
+  exp008_config: configs/experiments/crypto_1h_exp008.yaml
+  exp009_config: configs/experiments/crypto_1h_exp009.yaml
+  exp008_report_dir: reports/exp008
+  exp009_report_dir: reports/exp009
+
+# ── Go / No-Go gates ────────────────────────────────────
+# Answers the four exp010 questions
+go_no_go:
+  # Q1: SUI retains edge under execution-validation framework
+  sui_min_net_bps: 10.0
+  sui_min_trade_count: 50
+  # Q2: NEAR survives paper friction
+  near_min_net_bps: 5.0
+  near_min_trade_count: 50
+  # Q3: Family pool improves realized weekly PnL
+  min_positive_week_pct: 0.50
+  # Q4: Fill-quality profiles are comparable (KS p > 0.05)
+  fill_quality_ks_alpha: 0.05
+
+# ── Reporting ────────────────────────────────────────────
+reporting:
+  output_dir: reports/exp010
+  make_plots: true
+  save_predictions: true

@@ -1,0 +1,71 @@
+experiment_id: crypto_1h_exp003
+inherits_from: crypto_1h_exp001
+
+data_config: configs/data/crypto_1h.yaml
+feature_config: configs/features/baseline_features_v1.yaml
+label_config: configs/labels/horizon_labels_v1.yaml
+
+models:
+  - name: lightgbm
+    config: configs/models/lightgbm_v1.yaml
+
+backtest_config: configs/backtests/long_flat_v1.yaml
+
+validation:
+  scheme: rolling_walk_forward
+  train_days: 180
+  val_days: 30
+  test_days: 30
+  step_days: 30
+  embargo_bars: 4
+
+# ── exp003-specific: SOL-only focus ──────────────────────────────
+
+target_asset: SOL-USD
+target_model: lightgbm
+
+# ── Branch 2: Fill simulation ────────────────────────────────────
+fill_simulation:
+  fill_types:
+    - close_to_next_open
+    - next_bar_vwap
+    - next_bar_midpoint
+    - delayed_open_1bar
+    - delayed_open_2bar
+  thresholds: [0.50, 0.55, 0.60]
+
+# ── Branch 3: Horizon extension ──────────────────────────────────
+horizon_study:
+  horizons: [1, 2, 4]
+  thresholds: [0.50, 0.55, 0.60]
+  delays: [0, 1, 2]
+
+# ── Branch 4: Sparse event policies ─────────────────────────────
+sparse_policies:
+  top_pcts: [0.10, 0.05, 0.025]
+  sep_gaps: [3, 6, 12]
+  cooldowns: [3, 6, 12]
+  threshold: 0.55
+  delays: [0, 1]
+
+# ── Branch 5: Cost sensitivity ───────────────────────────────────
+cost_sensitivity:
+  cost_levels_bps: [5.0, 7.5, 10.0, 15.0]
+  threshold: 0.55
+  delays: [0, 1]
+
+# ── Predictions source ───────────────────────────────────────────
+exp001_predictions: data/artifacts/predictions/crypto_1h_exp001_predictions.parquet
+
+reporting:
+  output_dir: reports/exp003
+  make_plots: true
+  save_predictions: true
+
+# ── Go/No-Go gates ───────────────────────────────────────────────
+success_criteria:
+  corrected_sharpe_positive: true
+  one_bar_delay_sharpe_min: -0.5
+  min_trade_count: 100
+  fold_profitability_min: 0.65
+  min_tail_trades: 50

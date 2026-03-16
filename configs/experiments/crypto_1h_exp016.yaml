@@ -1,0 +1,30 @@
+experiment_name: "exp016_relative_value_screening"
+
+data:
+  # Base spot panel from expanded universe
+  panel_path: "data/processed/panel_expanded/panel.parquet"
+  funding_raw_dir: "data/raw/crypto_funding"
+  processed_dir: "data/processed/exp016_rv"
+  
+  # Target RV Pairs (Long / Short)
+  rv_pairs:
+    - ["SOL", "BTC"]
+    - ["APT", "SUI"]
+    - ["ETH", "BTC"]
+
+events:
+  # Using the highest-value event from exp015
+  vol_expansion:
+    type: "volatility"
+    atr_window: 14
+    baseline_window: 72
+    multiplier: 2.0
+
+magnitude:
+  horizons_hours: [12, 24, 48, 72]
+  exceedance_bps_thresholds: [30, 50, 80, 100]
+
+gates:
+  min_observations: 50
+  min_median_move_bps: 100
+  funding_target_annualized_percent: 15.0 # For basis screening

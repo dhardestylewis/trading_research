@@ -1,0 +1,59 @@
+experiment_name: "exp027"
+experiment_version: "1.0.0"
+
+# Description: Isolate and exploit the top-decile predictive edge discovered by TabPFN 
+# at the 8h horizon in exp026. Test if this edge survives strict position sizing, capacity routing, and out-of-sample scaling.
+
+data:
+  panel_path: "data/processed/panel_expanded/panel.parquet"
+  processed_dir: "data/processed/exp027_foundation_edge"
+  interval: "1h"
+  history_days: 720 # Needs substantial history to cover different regimes, but bounded by dataset
+  symbols:
+    - "BTC-USD"
+    - "ETH-USD"
+    - "SOL-USD"
+    - "AVAX-USD"
+    - "NEAR-USD"
+    - "APT-USD"
+    - "SUI-USD"
+
+features:
+  # Base market state
+  include_price_action: true
+  include_volume: true
+  
+  # Core Perp State
+  include_funding: true
+  include_open_interest: true
+  
+  # Structural
+  include_cross_sectional: true
+  
+  # Foundation specific formatting
+  pca_components: 90 # Strict constraint to adhere to TabPFN v0.1.9 limit (<100 features)
+
+walk_forward:
+  train_days: 14     # Short localized memory for fast regime adaptation. 
+  test_days: 14
+  embargo_days: 2    # Prevent leakage from horizon overlap
+  max_train_samples: 1000 # Critical safety limit for TabPFN v0.1.9 N<=1024 constraint
+
+targets:
+  horizons:
+    - 8   # Exclusively targeting the 8h anomaly found in exp026
+  prediction_target: "gross_move_bps" # Still predicting expected value, but mapped from classes in TabPFN
+
+models:
+  # The models we will test explicitly for the top-decile anomaly
+  challengers:
+    - "TabPFNTopDecile"
+    - "XGBoostCounterBaseline" # Heavily tuned gradient boosting to test if edge is foundation-exclusive
+
+execution_assumptions:
+  friction_bps: 14   # Same 14bps round-trip assumption. Must beat this to be viable.
+
+evaluation:
+  strict_go_nogo_gates: true
+  min_decile_9_trades: 100
+  required_decile_9_net_expectancy: 5.0 # bps, must be strongly positive after friction

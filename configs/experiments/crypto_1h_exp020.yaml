@@ -1,0 +1,60 @@
+experiment_name: "exp020_execution_cost_modeling"
+objective: >
+  Turn the highly predictable exec_loss_bps target from exp019 into a
+  production-quality standalone model to generate expected slippage,
+  toxicity regimes, fill-risk maps, and passive vs aggressive cost surfaces.
+
+# ── Data ─────────────────────────────────────────────────
+data:
+  panel_path: "data/processed/panel_expanded/panel.parquet"
+  processed_dir: "data/processed/exp020_cost_model"
+  asset_universe:
+    - SOL-USD
+    - BTC-USD
+    - ETH-USD
+    - APT-USD
+    - SUI-USD
+    - NEAR-USD
+    - AVAX-USD
+    - DOT-USD
+
+# ── Features (reusing exp019 base) ───────────────────────
+features:
+  return_lags: [1, 2, 4, 8, 24]
+  vol_windows: [6, 12, 24, 48]
+  vol_of_vol_window: 24
+  bollinger_window: 24
+  compression_trailing_window: 72
+  amihud_window: 24
+  vwap_deviation_window: 12
+  cross_asset_momentum_window: 24
+  momentum_divergence_windows: [6, 24]
+  calendar_encode: true
+  winsorize: true
+  winsorize_limits: [0.005, 0.995]
+
+# ── Model ────────────────────────────────────────────────
+model:
+  type: "lightgbm"
+  target: "exec_loss_bps"  # Single focus on execution loss prediction
+  params:
+    num_leaves: 31
+    max_depth: 5
+    learning_rate: 0.03
+    n_estimators: 300
+    min_child_samples: 100
+    subsample: 0.8
+    colsample_bytree: 0.7
+    reg_alpha: 0.1
+    reg_lambda: 1.0
+    verbose: -1
+  early_stopping_rounds: 20
+  walk_forward:
+    min_train_bars: 720       # 30 days minimum training
+    val_bars: 168             # 7 days validation
+    step_bars: 720            # 30-day steps
+
+# ── Reporting ────────────────────────────────────────────
+reporting:
+  output_dir: "reports/exp020"
+  make_plots: true

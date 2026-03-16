@@ -1,0 +1,81 @@
+diagnostic_name: regime_filters_v1
+
+# All quantiles are computed in-sample (training set) to avoid look-ahead.
+
+regime_flags:
+  # ── Volatility ────────────────────────────────────────────────
+  regime_vol_high:
+    feature: realized_vol_24h
+    operator: ">"
+    quantile: 0.70
+    lookback_bars: null  # rolling quantile computed per fold training set
+
+  regime_vol_low:
+    feature: realized_vol_24h
+    operator: "<"
+    quantile: 0.30
+
+  # ── Trend ─────────────────────────────────────────────────────
+  regime_trend_up:
+    feature: ret_24h
+    operator: ">"
+    quantile: 0.70
+
+  regime_trend_down:
+    feature: ret_24h
+    operator: "<"
+    quantile: 0.30
+
+  # ── Chop ──────────────────────────────────────────────────────
+  regime_chop:
+    description: "low abs return but moderate/high vol"
+    feature_low_return: ret_24h
+    low_return_quantile_range: [0.30, 0.70]  # abs(ret_24h) between 30th and 70th pct
+    feature_high_vol: realized_vol_24h
+    high_vol_quantile: 0.50
+
+  # ── Drawdown / Rebound ────────────────────────────────────────
+  regime_drawdown:
+    feature: drawdown_168h
+    operator: "<"
+    threshold_pct: -0.10  # fixed threshold, not quantile
+
+  regime_rebound:
+    description: "in drawdown but recent short return positive"
+    drawdown_feature: drawdown_168h
+    drawdown_threshold_pct: -0.10
+    rebound_feature: ret_1h
+    rebound_operator: ">"
+    rebound_threshold: 0.0
+
+  # ── Liquidity ─────────────────────────────────────────────────
+  regime_liquidity_high:
+    feature: dollar_volume_24h
+    operator: ">"
+    quantile: 0.70
+
+  # ── Calendar ──────────────────────────────────────────────────
+  regime_weekend:
+    feature: is_weekend
+    operator: "=="
+    value: 1
+
+  regime_us_hours:
+    feature: hour_of_day
+    operator: in
+    values: [13, 14, 15, 16, 17, 18, 19, 20]  # 13-20 UTC ~ US market hours
+
+  regime_asia_hours:
+    feature: hour_of_day
+    operator: in
+    values: [0, 1, 2, 3, 4, 5, 6, 7]  # 0-7 UTC ~ Asia hours
+
+# ── Fold-level regime descriptors ─────────────────────────────
+fold_descriptors:
+  - realized_vol_mean
+  - market_return_mean
+  - sol_vol_mean
+  - trend_strength        # abs(cumulative return) / realized_vol
+  - weekend_fraction
+  - drawdown_fraction     # fraction of bars with drawdown_168h < -10%
+  - high_vol_fraction     # fraction of bars with vol > 70th pct

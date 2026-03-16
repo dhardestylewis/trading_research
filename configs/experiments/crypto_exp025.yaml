@@ -1,0 +1,75 @@
+experiment_name: "exp025_perp_state_catalyst"
+objective: >
+  Find asset × state × horizon cells where expected gross move - expected execution cost > 0
+  using ML-discovered perp-state and catalyst features across 30m-24h horizons.
+
+# ── Data ─────────────────────────────────────────────────
+data:
+  panel_path: "data/processed/panel_expanded/panel.parquet"  # 1h or 15m panel, will check what exists
+  processed_dir: "data/processed/exp025_perp_state"
+  asset_universe:
+    - BTC-USD
+    - ETH-USD
+    - SOL-USD
+    - APT-USD
+    - SUI-USD
+    - NEAR-USD
+    - AVAX-USD
+    - DOGE-USD
+
+# ── Horizons ─────────────────────────────────────────────
+# Assuming the underlying panel is 1h, bars will be 1, 2, 8, 24
+# If the underlying panel is 15m, bars will be 2, 8, 32, 96
+horizons:
+  - bars: 1
+    label: "30m" # We will need to decide the base resolution later. If 1h panel, 1 bar is 1h, which isn't 30m. Let's assume a 30m or 15m or 1h panel. The user asked for 30m-24h.
+  - bars: 2
+    label: "2h" # Assuming 1h base for now? Wait, if 1 bar=1h, 2 bars=2h.
+    # Actually wait. If base=1h, we can't do 30m. If base=15m, 2=30m, 8=2h, 32=8h, 96=24h. We will adopt 15m or build a custom one.
+    
+# Let's adjust horizons assuming 15m panel:
+# 30m  = 2 bars
+# 2h   = 8 bars
+# 8h   = 32 bars
+# 24h  = 96 bars
+# 
+
+# ── Multi-head model ─────────────────────────────────────
+model:
+  type: "lightgbm"
+  targets:
+    - name: "gross_move_bps"
+    - name: "prob_tail_25"
+    - name: "prob_tail_50"
+    - name: "prob_tail_100"
+    - name: "net_move_bps"
+  params:
+    num_leaves: 31
+    max_depth: 5
+    learning_rate: 0.03
+    n_estimators: 300
+    verbose: -1
+  early_stopping_rounds: 30
+  walk_forward:
+    min_train_bars: 2880      # ~30 days at 15m
+    val_bars: 672             # 7 days
+    step_bars: 2880           # 30-day steps
+
+# ── Execution / friction ─────────────────────────────────
+execution:
+  fee_bps_per_leg: 5.0        # 0.05% taker perp assumption
+  slippage_bps_per_leg: 2.0
+  round_trip_bps: 14.0
+
+# ── Kill gates ───────────────────────────────────────────
+gates:
+  min_non_overlapping_trades: 100
+  median_gross_bps_floor: 14.0 # 0.14% RT cost
+  median_net_bps_floor: 0.0
+  trimmed_mean_trim: 0.10
+  trimmed_mean_floor_bps: 0.0
+  required_assets: 2
+
+# ── Reporting ────────────────────────────────────────────
+reporting:
+  output_dir: "reports/exp025"

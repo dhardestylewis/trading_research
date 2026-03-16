@@ -1,0 +1,61 @@
+experiment_name: "exp026_rich_state_strong_model"
+this_branch_tests_model_capacity_not_execution: true
+objective: >
+  Test whether richer information set and stronger models produce net-positive, walk-forward-stable asset×horizon×bucket cells after realistic perp friction.
+
+data:
+  panel_path: "data/processed/panel_expanded/panel.parquet" 
+  processed_dir: "data/processed/exp026_rich_state"
+  asset_universe:
+    - BTC-USD
+    - ETH-USD
+    - SOL-USD
+    - APT-USD
+    - SUI-USD
+    - NEAR-USD
+    - DOGE-USD
+    - AVAX-USD
+
+horizons:
+  - bars: 2
+    label: "2h"
+  - bars: 8
+    label: "8h"
+  - bars: 24
+    label: "24h"
+  - bars: 48
+    label: "48h"
+
+models:
+  baselines:
+    - Ridge
+    - LightGBM
+    - CatBoost
+  challengers:
+    - TabPFNRegressor
+
+targets:
+  primary: "gross_move_bps"
+  secondary:
+    - "prob_tail_25"
+    - "prob_tail_50"
+    - "prob_tail_100"
+
+walk_forward:
+  train_windows_days: [90]
+  test_windows_days: [14]
+  refresh_cadence_days: [14]
+
+execution:
+  round_trip_bps: 14.0
+
+gates:
+  min_non_overlapping_trades: 100
+  median_gross_bps_floor: 25.0
+  median_net_bps_floor: 0.0
+  trimmed_mean_trim: 0.10
+  trimmed_mean_floor_bps: 0.0
+  required_assets_passing: 1
+
+reporting:
+  output_dir: "reports/exp026"

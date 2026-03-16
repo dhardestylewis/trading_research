@@ -1,0 +1,84 @@
+experiment_id: crypto_1h_exp002
+inherits_from: crypto_1h_exp001
+
+data_config: configs/data/crypto_1h.yaml
+feature_config: configs/features/baseline_features_v1.yaml
+label_config: configs/labels/horizon_labels_v1.yaml
+
+models:
+  - name: naive_momentum
+    config: null
+  - name: logistic_regression
+    config: configs/models/logistic_v1.yaml
+  - name: lightgbm
+    config: configs/models/lightgbm_v1.yaml
+
+backtest_config: configs/backtests/long_flat_v1.yaml
+
+validation:
+  scheme: rolling_walk_forward
+  train_days: 180
+  val_days: 30
+  test_days: 30
+  step_days: 30
+  embargo_bars: 4
+
+# ── exp002-specific ──────────────────────────────────────────────
+
+branches:
+  asset_modes:
+    - pooled
+    - btc_only
+    - eth_only
+    - sol_only
+
+diagnostics:
+  score_deciles_config: configs/diagnostics/score_deciles_v1.yaml
+  regime_filters_config: configs/diagnostics/regime_filters_v1.yaml
+  execution_robustness_config: configs/diagnostics/execution_robustness_v1.yaml
+
+policies:
+  - name: baseline_threshold
+    type: long_flat_threshold
+    thresholds: [0.50, 0.55, 0.60, 0.65]
+
+  - name: tail_only
+    type: tail_threshold
+    thresholds: [0.50, 0.55, 0.60, 0.65]
+    tail_quantiles: [0.80, 0.90, 0.95, 0.975]
+
+  - name: regime_gated
+    type: regime_threshold
+    thresholds: [0.50, 0.55, 0.60, 0.65]
+    regime_filters:
+      - high_vol
+      - high_liquidity
+      - drawdown_rebound
+      - trend_up
+      - non_weekend
+      - weekend
+
+  - name: hybrid_gate
+    type: hybrid_threshold
+    thresholds: [0.55, 0.60, 0.65]
+    tail_quantiles: [0.90, 0.95]
+    regime_filters:
+      - high_vol
+      - high_liquidity
+      - drawdown_rebound
+
+# ── Predictions source ───────────────────────────────────────────
+exp001_predictions: data/artifacts/predictions/crypto_1h_exp001_predictions.parquet
+
+reporting:
+  output_dir: reports/exp002
+  make_plots: true
+  save_predictions: true
+
+success_criteria:
+  fold_profitability_min: 0.60
+  max_single_asset_share: 0.75
+  base_cost_sharpe_positive: true
+  one_bar_delay_sharpe_sign: positive
+  tail_monotonicity: true
+  min_trade_count: 100

@@ -1,0 +1,17 @@
+label_set_name: horizon_labels_v1
+
+horizons: [1, 2, 4]  # in bars (hours)
+
+targets:
+  regression:
+    - fwd_ret_{h}h
+  classification:
+    - fwd_sign_{h}h
+  tradable:
+    - fwd_ret_after_cost_{h}h
+    - fwd_profitable_{h}h
+
+# Cost used when computing fwd_ret_after_cost and fwd_profitable labels
+label_cost_regime: base  # references backtests/long_flat_v1.yaml cost regimes
+
+output_dir: data/processed/labels

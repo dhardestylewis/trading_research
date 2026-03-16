@@ -1,0 +1,32 @@
+experiment_name: "exp015_catalyst_magnitude"
+
+data:
+  # Using the expanded universe 1h panel
+  panel_path: "data/processed/panel_expanded/panel.parquet"
+  processed_dir: "data/processed/exp015_magnitude"
+
+# Event state definitions
+events:
+  vol_expansion:
+    type: "volatility"
+    atr_window: 14
+    baseline_window: 72
+    multiplier: 2.0
+  range_breakout_72h:
+    type: "breakout"
+    window: 72
+  rsi_extreme:
+    type: "oscillator"
+    window: 14
+    upper: 85
+    lower: 15
+
+# Magnitude evaluation
+magnitude:
+  horizons_hours: [12, 24, 48, 72]
+  exceedance_bps_thresholds: [30, 50, 80, 100, 150, 200]
+
+# Go/No-go gates
+gates:
+  min_observations: 100
+  min_median_move_bps: 100  # want the median max-excursion to clear friction easily

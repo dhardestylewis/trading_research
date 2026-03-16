@@ -1,0 +1,113 @@
+experiment_id: crypto_1h_exp008
+inherits_from: crypto_1h_exp007
+objective: >
+  Capacity research — shift from "does signal exist?" to
+  "can we increase expected net PnL per week?" by jointly
+  optimizing edge, trade frequency, and deployable notional.
+
+# ── Data configs ─────────────────────────────────────────
+data_config: configs/data/crypto_1h.yaml
+data_config_expanded: configs/data/crypto_1h_expanded.yaml
+feature_config: configs/features/baseline_features_v1.yaml
+label_config: configs/labels/horizon_labels_v1.yaml
+label_config_multi: configs/labels/multi_horizon_labels_v1.yaml
+
+models:
+  - name: lightgbm
+    config: configs/models/lightgbm_v1.yaml
+
+backtest_config: configs/backtests/long_flat_v1.yaml
+
+validation:
+  scheme: rolling_walk_forward
+  train_days: 180
+  val_days: 30
+  test_days: 30
+  step_days: 30
+  embargo_bars: 4
+
+# ── Reference policy (frozen from exp005/006) ────────────
+target_asset: SOL-USD
+target_model: lightgbm
+
+policy:
+  training_mode: pooled_train_sol_deploy
+  threshold: 0.55
+  sep_gap: 3
+  regime_gate: NOT_rebound
+  cost_bps: 15.0
+
+# ── Branch control ───────────────────────────────────────
+branches:
+  run_a: true   # multi-horizon stacking
+  run_b: true   # universe expansion
+  run_c: true   # score calibration
+  run_d: true   # execution-aware alpha
+  run_e: true   # capacity economics (always runs if any branch runs)
+
+# ── Branch A: Multi-horizon stacking ────────────────────
+multi_horizon:
+  horizons: [1, 2, 4]
+  threshold: 0.55
+  sep_gap: 3
+  cost_bps: 15.0
+  dedup_window_bars: 2   # suppress duplicate fires within this window
+
+# ── Branch B: Universe expansion ────────────────────────
+universe_expansion:
+  expansion_assets:
+    - AVAX-USD
+    - NEAR-USD
+    - SUI-USD
+    - APT-USD
+    - DOT-USD
+  training_mode: pooled_all
+  threshold: 0.55
+  sep_gap: 3
+  cost_bps: 15.0
+  min_sharpe: 0.5
+  min_fold_profitability: 0.50
+
+# ── Branch C: Score calibration ─────────────────────────
+score_calibration:
+  n_bins: 20            # ventile bins
+  top_k: 3              # long top-K assets cross-sectionally
+  min_spread_bps: 20.0  # top-vs-bottom ventile gate
+
+# ── Branch D: Execution-aware alpha ─────────────────────
+execution_aware:
+  slippage_scenarios_bps: [0, 5, 10, 15, 20]
+  threshold: 0.55
+  sep_gap: 3
+  min_improvement_bps: 5.0
+
+# ── Branch E: Capacity economics ────────────────────────
+capacity_economics:
+  notional_levels: [50000, 100000, 250000, 500000]
+  slippage_levels_bps: [5, 10, 15, 20]
+  frequency_multipliers: [1, 2, 5, 10]
+  baseline_edge_bps: 44.0
+  baseline_trades_per_week: 4.0
+
+# ── Go / No-Go gates (aggregate) ────────────────────────
+go_no_go:
+  # Branch A gate
+  min_horizon_stack_trade_multiplier: 2.0
+  min_stacked_net_expectancy_bps: 0.0
+  # Branch B gate
+  min_qualifying_expansion_assets: 2
+  # Branch C gate
+  min_top_bottom_spread_bps: 20.0
+  # Branch D gate
+  min_exec_aware_improvement_bps: 5.0
+  # Aggregate
+  min_weekly_pnl_improvement_pct: 50.0  # ≥50% improvement over baseline
+
+# ── Predictions source ───────────────────────────────────
+exp001_predictions: data/artifacts/predictions/crypto_1h_exp001_predictions.parquet
+
+# ── Reporting ────────────────────────────────────────────
+reporting:
+  output_dir: reports/exp008
+  make_plots: true
+  save_predictions: true

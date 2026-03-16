@@ -1,0 +1,21 @@
+diagnostic_name: score_deciles_v1
+
+decile_analysis:
+  enabled: true
+  n_buckets: 10
+
+tail_quantiles:
+  enabled: true
+  quantiles: [0.80, 0.90, 0.95, 0.975]
+
+per_bucket_metrics:
+  - mean_fwd_gross_return
+  - mean_fwd_net_return
+  - median_fwd_net_return
+  - hit_rate
+  - trade_count
+  - turnover
+  - avg_holding_duration
+  - asset_composition
+  - avg_realized_vol
+  - avg_drawdown_state

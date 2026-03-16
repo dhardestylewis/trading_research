@@ -1,0 +1,133 @@
+experiment_id: crypto_1h_exp007
+inherits_from: crypto_1h_exp006
+objective: >
+  Live paper canary — 7-14 day exchange lifecycle validation.
+  Replace simulated fills with real paper fills, rerun the identical
+  execution-quality pipeline, compare realized vs simulated lane metrics.
+  No model changes, no policy changes. Pure data replacement problem.
+
+data_config: configs/data/crypto_1h.yaml
+feature_config: configs/features/baseline_features_v1.yaml
+label_config: configs/labels/horizon_labels_v1.yaml
+
+models:
+  - name: lightgbm
+    config: configs/models/lightgbm_v1.yaml
+
+backtest_config: configs/backtests/long_flat_v1.yaml
+
+validation:
+  scheme: rolling_walk_forward
+  train_days: 180
+  val_days: 30
+  test_days: 30
+  step_days: 30
+  embargo_bars: 4
+
+# ── Same policy, same three lanes, no model changes ──────────────
+target_asset: SOL-USD
+target_model: lightgbm
+
+policy:
+  training_mode: pooled_train_sol_deploy
+  threshold: 0.55
+  sep_gap: 3
+  regime_gate: NOT_rebound
+  cost_bps: 15.0
+
+# ── Deployment lanes (identical to exp006) ───────────────────────
+primary_lane:
+  name: marketable_near_open
+  type: market
+  description: "Primary decision lane — simplest operational path"
+
+shadow_lanes:
+  - name: passive_open_minus_5bps
+    type: passive_limit
+    offset_bps: 5.0
+    description: "Shadow comparator — passive limit at open - 5 bps"
+  - name: passive_open_minus_10bps
+    type: passive_limit
+    offset_bps: 10.0
+    description: "Shadow comparator — passive limit at open - 10 bps"
+
+# ── Canary configuration ────────────────────────────────────────
+canary:
+  duration_days: 14
+  data_source: live_paper    # vs exp006's "simulated"
+  exchange: coinbase_sandbox
+  check_interval_hours: 24   # run health checks daily
+  warmup_days: 3             # skip health checks until warmup complete
+
+# ── Tolerance bands for canary health checks ────────────────────
+# These are the thresholds that realized metrics must stay within.
+# Derived from the user's deployment requirements.
+tolerance_bands:
+  min_realized_fill_rate: 0.60
+  max_mean_slippage_bps: 10.0
+  max_cancel_rate: 0.30
+  max_shortfall_vs_simulated_bps: 15.0
+  min_return_per_trade_bps: 0.0     # relaxed for canary — about survival
+  max_weekly_execution_error_bps: 20.0
+
+# ── Stage gates (user's deployment sequence) ────────────────────
+stage_gates:
+  stage_1_paper:
+    description: "Live paper only — same policy, same lanes, collect logs"
+    requirements:
+      - "realized fill rate ≥ 60%"
+      - "mean slippage ≤ 10 bps"
+      - "cancel rate ≤ 30% for passive lanes"
+      - "realized return per trade > 0 after fills"
+      - "weekly expectancy directionally consistent with simulation"
+      - "shortfall vs simulated ≤ 15 bps per lane"
+    duration_days: 14
+
+  stage_2_tiny_capital:
+    description: "Tiny-capital canary — primary marketable lane only"
+    prerequisites:
+      - "stage_1_paper metrics stable for 7+ days"
+    requirements:
+      - "primary marketable lane only"
+      - "passive lanes remain shadow monitors"
+      - "all stage_1 tolerances still hold"
+
+  stage_3_expansion:
+    description: "Controlled expansion — only after multi-week stability"
+    prerequisites:
+      - "realized live metrics stable across 2+ weeks"
+      - "multiple fold-equivalent windows observed"
+
+# ── Simulated baseline for comparison ────────────────────────────
+simulated_baseline:
+  exp006_log: reports/exp006/tables/full_paper_trade_log.csv
+  exp006_lane_summary: reports/exp006/tables/execution_quality.csv
+
+# ── Metric dictionary ───────────────────────────────────────────
+metric_dictionary:
+  fill_rate: >
+    Fraction of submitted orders that receive a fill (full or partial).
+    Denominator = orders actually submitted to the exchange after all
+    gating and spacing filters.  Not the fraction of raw signals.
+  trade_count: >
+    Number of distinct round-trip trades (entry + exit) that completed
+    during the evaluation window.  Partial fills that were cancelled
+    before exit are NOT counted.
+  fold_profitability: >
+    Fraction of walk-forward folds in which the mean per-trade net
+    return (after costs) is strictly positive.
+  shortfall_vs_simulated_entry: >
+    Signed difference between realized fill price and simulated entry
+    expectation, in bps, per lane.  Positive = live fills were worse
+    (paid more) than backtest assumed.  Distinguishes "live is merely
+    noisier" from "live is structurally worse."
+  weekly_execution_error: >
+    Standard deviation of daily shortfall-vs-simulated values within
+    a rolling 7-day window. Measures stability of execution quality
+    over time, not just the mean level.
+
+# ── Reporting ────────────────────────────────────────────────────
+reporting:
+  output_dir: reports/exp007
+  make_plots: true
+  save_predictions: true

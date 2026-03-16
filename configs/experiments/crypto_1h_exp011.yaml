@@ -1,0 +1,96 @@
+experiment_id: crypto_1h_exp011
+objective: >
+  Gross-Move Atlas — magnitude-first screening program.
+  Phase 1: non-ML economic screening. Find asset × horizon × regime × entry
+  cells where gross move distribution plausibly clears 30+ bps friction.
+  No model training until cells are identified.
+
+# ── Data ─────────────────────────────────────────────────
+data_config: configs/data/crypto_atlas.yaml
+feature_config: configs/features/baseline_features_v1.yaml
+
+# ── Horizons to screen ───────────────────────────────────
+# Starting with 1h. Add 15m and 4h by adding entries here
+# and providing matching data configs.
+horizons:
+  - bars: 1
+    label: 1h
+
+# Future horizons (uncomment when bar-size data is available):
+#  - bars: 1
+#    label: 15m
+#    data_config: configs/data/crypto_atlas_15m.yaml
+#  - bars: 1
+#    label: 4h
+#    data_config: configs/data/crypto_atlas_4h.yaml
+
+# ── Entry conventions ────────────────────────────────────
+entry_conventions:
+  - name: market_next_open
+    type: market
+    description: "Buy at next-bar open (worst case)"
+
+  - name: passive_touch
+    type: passive
+    offset_bps: 0.0
+    description: "Limit at next-bar open, fill if low touches"
+
+  - name: passive_minus_5
+    type: passive
+    offset_bps: 5.0
+    description: "Limit at open - 5 bps"
+
+  - name: passive_minus_10
+    type: passive
+    offset_bps: 10.0
+    description: "Limit at open - 10 bps"
+
+# ── Regime slices ────────────────────────────────────────
+# Uses both standard regime_labeller flags and event_regimes
+regime_slices:
+  - name: all
+    filter: null
+  - name: high_vol
+    filter: regime_vol_high == 1
+  - name: low_vol
+    filter: regime_vol_low == 1
+  - name: trend_up
+    filter: regime_trend_up == 1
+  - name: trend_down
+    filter: regime_trend_down == 1
+  - name: drawdown
+    filter: regime_drawdown == 1
+  - name: chop
+    filter: regime_chop == 1
+  - name: not_rebound
+    filter: regime_rebound == 0
+  # Event-driven regimes (from event_regimes.py)
+  - name: breakout
+    filter: event_breakout == 1
+  - name: compression_expansion
+    filter: event_compression_expansion == 1
+  - name: wick_reversal
+    filter: event_wick_reversal == 1
+  - name: cascade_exhaustion
+    filter: event_cascade_exhaustion == 1
+  - name: range_expansion
+    filter: event_range_expansion == 1
+
+# ── Friction hurdle ──────────────────────────────────────
+friction:
+  round_trip_bps: 30.0
+  gross_thresholds_bps: [20, 30, 40, 50]
+
+# ── Kill gate ────────────────────────────────────────────
+# The atlas must find at least this many viable cells to proceed.
+kill_gate:
+  min_viable_cells: 3
+  min_trades_per_cell: 100
+  require_median_or_p75_above_friction: true
+
+# ── Reporting ────────────────────────────────────────────
+reporting:
+  output_dir: reports/exp011
+  make_plots: true
+  # PROGRAM RULE: gross bps distribution must be the first table
+  first_table: gross_bps_distribution

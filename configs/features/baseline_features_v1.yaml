@@ -1,0 +1,38 @@
+feature_set_name: baseline_features_v1
+
+winsorize: true
+winsorize_limits: [0.01, 0.99]
+standardize_for_linear_models: true
+
+price_features:
+  - ret_1h
+  - ret_2h
+  - ret_4h
+  - ret_8h
+  - ret_24h
+  - log_ret_1h
+  - range_pct
+  - close_to_high
+  - close_to_low
+  - realized_vol_6h
+  - realized_vol_24h
+  - downside_vol_24h
+  - upside_vol_24h
+  - drawdown_24h
+  - drawdown_168h
+
+volume_features:
+  - vol_chg_1h
+  - rel_volume_24h
+  - dollar_volume_24h
+  - amihud_proxy_24h
+
+regime_features:
+  - market_ret_1h
+  - market_ret_24h
+  - market_vol_24h
+  - hour_of_day
+  - day_of_week
+  - is_weekend
+
+output_dir: data/processed/features

@@ -1,0 +1,95 @@
+experiment:
+  id: "exp023"
+  name: "Live Execution-Conditioned Short-Horizon Flow Validation"
+  type: "live_taker_validation"
+  description: "Test whether exp022 1s-5s flow signal survives into net executable economics."
+
+universe:
+  venue: "Binance"
+  assets:
+    - "BTC-USDT"
+    - "ETH-USDT"
+    - "SOL-USDT"
+
+data:
+  replay_days: 90
+  live_paper: true
+  resolution: "1s"
+
+horizons:
+  primary:
+    - "1s"
+    - "5s"
+  diagnostic:
+    - "10s"
+
+features:
+  core:
+    - "signed_volume_1s"
+    - "signed_volume_5s"
+    - "flow_imbalance"
+    - "buyer_maker_seller_maker_imbalance"
+    - "trade_count_burst_intensity"
+    - "average_trade_size_shock"
+  price:
+    - "vwap_1s"
+    - "vwap_dislocation"
+    - "recent_return_1s"
+    - "recent_return_5s"
+    - "realized_volatility"
+  liquidity:
+    - "spread_bps"
+    - "spread_percentile"
+    - "top_of_book_size"
+    - "book_imbalance"
+  state:
+    - "asset"
+    - "hour_of_day"
+    - "weekend_indicator"
+    - "recent_event_intensity"
+
+models:
+  classes:
+    - "LightGBM"
+    - "CatBoost"
+    - "linear"
+  train_targets:
+    - "markout_1s_gross_bps"
+    - "markout_5s_gross_bps"
+  eval_targets:
+    - "markout_1s_net_taker_bps"
+    - "markout_5s_net_taker_bps"
+
+execution:
+  mode: "taker_only"
+  fee_bps: 4.0 # Typical Binance VIP taker fee approximation
+  latency_buckets_ms:
+    - 0
+    - 100
+    - 250
+    - 500
+    - 1000
+
+evaluation:
+  trailing_windows:
+    - "3d"
+    - "7d"
+    - "14d"
+    - "30d"
+  refresh_cadences:
+    - "1h"
+    - "6h"
+    - "12h"
+    - "24h"
+  baselines:
+    - "flow_sign"
+    - "signed_volume_shock"
+    - "vwap_dislocation"
+    - "no_model_filter"
+
+gates:
+  signal_replication: "OOS gross predictive content at 1s or 5s beating baselines"
+  net_taker_viability: "Positive median and trimmed mean top-bucket net markout"
+  latency_survival: "Positive net markout under 100-250ms latency"
+  freshness_viability: "Stable trailing-window/refresh cadence without collapse"
+  live_paper_alignment: "Directionally consistent live paper vs replay"
