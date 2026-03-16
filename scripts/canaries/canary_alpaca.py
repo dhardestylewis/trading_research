@@ -34,30 +34,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 log = logging.getLogger("canary_alpaca")
 
-# ── TabPFN patches ──────────────────────────────────────────────
-import sklearn.utils.validation
-_o1 = sklearn.utils.validation.check_X_y
-def _p1(*a, **k):
-    if 'force_all_finite' in k: k['ensure_all_finite'] = k.pop('force_all_finite')
-    return _o1(*a, **k)
-sklearn.utils.validation.check_X_y = _p1
-_o2 = sklearn.utils.validation.check_array
-def _p2(*a, **k):
-    if 'force_all_finite' in k: k['ensure_all_finite'] = k.pop('force_all_finite')
-    return _o2(*a, **k)
-sklearn.utils.validation.check_array = _p2
 
-import torch, torch.nn.modules.transformer as _t, typing
-_t.Optional = typing.Optional; _t.Tensor = torch.Tensor
-_t.Module = torch.nn.Module; _t.Linear = torch.nn.Linear
-_t.Dropout = torch.nn.Dropout; _t.LayerNorm = torch.nn.LayerNorm
-_t.MultiheadAttention = torch.nn.MultiheadAttention
-if not hasattr(_t, '_get_activation_fn'):
-    def _g(a):
-        if a == "relu": return torch.nn.functional.relu
-        elif a == "gelu": return torch.nn.functional.gelu
-        raise RuntimeError(a)
-    _t._get_activation_fn = _g
 
 from tabpfn import TabPFNClassifier
 
@@ -173,7 +150,7 @@ def score_xle(rich: pd.DataFrame, feat_cols: list[str]) -> dict:
     Xt = pca.transform(scaler.transform(X_test))
 
     bins = pd.qcut(y, TABPFN_BINS, labels=False, duplicates='drop')
-    clf = TabPFNClassifier(device='cpu', N_ensemble_configurations=4)
+    clf = TabPFNClassifier()
     clf.fit(Xp, bins)
 
     proba = clf.predict_proba(Xt)[0]
