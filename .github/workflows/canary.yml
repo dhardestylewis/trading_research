@@ -1,0 +1,45 @@
+name: Alpaca Paper Trading Canary
+
+on:
+  schedule:
+    # Run at 5 minutes past the hour, every hour, Monday through Friday
+    - cron: '5 * * * 1-5'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  run-canary:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to commit state back to the repo
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas numpy scikit-learn torch tabpfn alpaca-trade-api websockets yfinance python-dotenv
+
+      - name: Run Canary
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: |
+          python scripts/canaries/canary_alpaca.py
+
+      - name: Commit and push state
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add reports/canary/ data/artifacts/
+          git commit -m "Update canary state and logs [skip ci]" || echo "No changes to commit"
+          git push
