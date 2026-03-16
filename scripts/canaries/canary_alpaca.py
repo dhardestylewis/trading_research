@@ -133,6 +133,12 @@ def fetch_xle_data(lookback: int = 600) -> pd.DataFrame:
 
 def build_features(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     """Build rich features from OHLCV data."""
+    import sys
+    from pathlib import Path
+    _proj_root = Path(__file__).resolve().parent.parent.parent
+    if str(_proj_root) not in sys.path:
+        sys.path.append(str(_proj_root))
+        
     from src.data.build_rich_perp_state_features import build_rich_perp_state_features
     rich = build_rich_perp_state_features(df, horizons=[8])
     exclude = {'timestamp','asset','symbol','timestamp_ms','open','high','low','close',
