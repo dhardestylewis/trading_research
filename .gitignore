@@ -8,7 +8,7 @@ venv/
 env/
 
 # Data and artifacts
-data/
+/data/
 reports/
 logs/
 *.log
