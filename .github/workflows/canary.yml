@@ -29,6 +29,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install pandas numpy scikit-learn "torch<2.6.0" tabpfn==0.1.9 alpaca-trade-api websockets yfinance python-dotenv
 
+      - name: Copy Cached TabPFN Checkpoint
+        run: |
+          SITE_PACKAGES=$(python -c 'import site; print(site.getsitepackages()[0])')
+          mkdir -p $SITE_PACKAGES/tabpfn/models_diff/
+          cp models/tabpfn/prior_diff_real_checkpoint_n_0_epoch_100.cpkt $SITE_PACKAGES/tabpfn/models_diff/prior_diff_real_checkpoint_n_0_epoch_100.cpkt
+
       - name: Run Canary
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
