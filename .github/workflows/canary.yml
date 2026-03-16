@@ -35,6 +35,12 @@ jobs:
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
           PYTHONPATH: .
         run: |
+          echo "Current directory:"
+          pwd
+          echo "Contents of current directory:"
+          ls -la
+          echo "Contents of src (if exists):"
+          ls -la src || echo "src directory not found!"
           python scripts/canaries/canary_alpaca.py
 
       - name: Commit and push state
