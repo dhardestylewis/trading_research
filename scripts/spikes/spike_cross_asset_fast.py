@@ -3,6 +3,7 @@ import numpy as np
 import yfinance as yf
 from tabpfn import TabPFNClassifier
 import concurrent.futures
+import json
 
 WINDOW = 150
 
@@ -51,5 +52,11 @@ if __name__ == "__main__":
     for m in MACROS:
         cross.extend([f"{m}_ret_1", f"{m}_ret_3", f"{m}_rv_6", f"resid_{m}", f"beta_proxy_{m}"])
         
-    print("BASE:", evaluate(df, baseline))
-    print("CROSS:", evaluate(df, cross))
+    base_res = evaluate(df, baseline)
+    print("BASE:", {k: v for k, v in base_res.items() if k != "ledger"})
+    
+    cross_res = evaluate(df, cross)
+    print("CROSS:", {k: v for k, v in cross_res.items() if k != "ledger"})
+    
+    with open("ledger.json", "w") as f:
+        json.dump({"BASE": base_res, "CROSS": cross_res}, f, indent=4)

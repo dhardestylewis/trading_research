@@ -28,8 +28,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install tabpfn torch pandas numpy scikit-learn yfinance python-dotenv
 
-      - name: Execute Live CPU Exogenous Probe
+      - name: Execute Live CPU Exogenous Matrix
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           python scripts/spikes/spike_cross_asset_fast.py
+
+      - name: Upload Trade Ledger Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: quantitative-trade-ledger
+          path: ledger.json
