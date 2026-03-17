@@ -32,5 +32,4 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          python scripts/spikes/fast_probe.py
-          cat results.txt
+          python scripts/spikes/spike_cross_asset_fast.py
