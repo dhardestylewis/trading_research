@@ -2,8 +2,11 @@ name: Alpaca Paper Trading Canary
 
 on:
   schedule:
-    # Run at 5 minutes past the hour, between 9AM and 5PM Eastern (13:00 - 21:00 UTC), Mon-Fri
-    - cron: '5 13-21 * * 1-5'
+    # 1h bars close on the half hour (e.g., 9:30-10:30 bar finalizes at 10:30).
+    # We trigger at XX:35 to cleanly score finalized data (10:35 AM ET to 3:35 PM ET).
+    - cron: '35 14-19 * * 1-5'
+    # The final 3:30-4:00 PM half-bar closes at 4:00 PM ET. We trigger at 4:05 PM ET.
+    - cron: '5 20 * * 1-5'
   workflow_dispatch: # Allow manual triggering
 
 jobs:
