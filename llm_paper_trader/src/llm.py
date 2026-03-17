@@ -7,7 +7,7 @@ class LLMPricer:
         import os
         self.api_key = api_key or os.environ.get("OPENROUTER_API_KEY", "")
         self.url = "https://openrouter.ai/api/v1/chat/completions"
-        self.model = "qwen/qwen-2.5-72b-instruct:free"
+        self.model = "qwen/qwen3-next-80b-a3b-instruct:free"
 
     def get_probability(self, question: str, context: str, active_rules: str = "") -> dict:
         """
