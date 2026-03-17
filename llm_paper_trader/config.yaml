@@ -1,0 +1,15 @@
+# Configuration for LLM Paper Trader
+apis:
+  anthropic_api_key: ""
+  tavily_api_key: ""
+  polymarket:
+    host: "https://clob.polymarket.com"
+
+strategy:
+  min_volume: 50000.0
+  min_hours_to_resolve: 24
+  edge_threshold: 0.05
+  trade_size_dollars: 100.0
+
+database:
+  db_path: "db.sqlite"

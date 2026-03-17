@@ -22,3 +22,9 @@ logs/
 
 # Ignore Jupyter notebook checkpoints
 .ipynb_checkpoints/
+
+# LLM Paper Trading Credentials & Shadow Database
+.env
+.env.local
+*.sqlite
+llm_paper_trader/db.sqlite
