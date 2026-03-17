@@ -2,6 +2,6 @@ requests>=2.31.0
 pydantic>=2.4.0
 pyyaml>=6.0.1
 anthropic>=0.20.0        # Or openai if preferred
-tavily-python>=0.3.3     # Search API
+duckduckgo-search>=5.0.0 # Free unstructured search bypass
 pandas>=2.1.0
 python-dotenv>=1.0.0

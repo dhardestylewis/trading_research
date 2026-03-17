@@ -31,8 +31,7 @@ jobs:
       - name: Execute LLM Autonomous Reflexion & Execution Cycle
         working-directory: ./llm_paper_trader
         env:
-          TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
-          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           MANIFOLD_API_KEY: ${{ secrets.MANIFOLD_API_KEY }}
           KALSHI_API_KEY: ${{ secrets.KALSHI_API_KEY }}
           KALSHI_PRIVATE_KEY: ${{ secrets.KALSHI_PRIVATE_KEY }}
