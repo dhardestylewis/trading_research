@@ -29,6 +29,8 @@ jobs:
           pip install tabpfn torch pandas numpy scikit-learn yfinance python-dotenv
 
       - name: Execute Live CPU Exogenous Probe
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           python scripts/spikes/fast_probe.py
           cat results.txt
