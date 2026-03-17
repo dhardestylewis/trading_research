@@ -2,8 +2,10 @@ name: Cross-Asset Multivariate Evaluation Spike
 
 on:
   push:
-    paths:
-      - '.github/workflows/spike_cross_asset.yml'
+    branches:
+      - main
+      - master
+  workflow_dispatch:
 
 permissions:
   contents: write
