@@ -41,7 +41,7 @@ TABPFN_BINS = 10
 THRESHOLD = 0.25      # top-2-decile conviction threshold
 HORIZON_HOURS = 8     # hold duration
 MAX_CONCURRENT = 4    # max overlapping positions
-CAPITAL_FRACTION = 0.25  # 1/MAX_CONCURRENT per trade
+CAPITAL_FRACTION = 0.10  # 10% max raw equity exposure per trade
 TICK_INTERVAL = 3600  # 1 hour in seconds
 
 SIGNAL_LOG = Path("reports/canary/alpaca_signals.csv")
@@ -186,7 +186,7 @@ def execute_trade(api, signal: dict, dry_run: bool = False) -> dict:
 
     try:
         account = api.get_account()
-        max_trade_amount = float(account.buying_power) * CAPITAL_FRACTION
+        max_trade_amount = float(account.equity) * CAPITAL_FRACTION
         
         scalar = signal.get("allocation_scalar", 1.0)
         trade_amount = max_trade_amount * scalar
