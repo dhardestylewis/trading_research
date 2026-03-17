@@ -23,7 +23,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip setuptools wheel
           pip install tabpfn torch pandas numpy scikit-learn yfinance alpaca-trade-api python-dotenv
 
       - name: Execute Live CPU Exogenous Probe
