@@ -72,6 +72,12 @@ def run():
     open_markets = db.get_open_markets()
     print(f"Evaluating {len(open_markets)} total markets from localized tracking DB.")
     
+    # Extract structural Neocortex Memory to inject into the LLM
+    top_rules = db.get_top_trading_rules(limit=10)
+    active_rules_text = "\n".join([f"- {r['rule_text']} (Weight: {r['weight']:.2f})" for r in top_rules])
+    if top_rules:
+        print(f"Loaded {len(top_rules)} structural memory rules to override heuristic evaluation.")
+
     # Evaluate ALL 989 tracked markets concurrently
     for m in open_markets:
         market_id = str(m['market_id'])
@@ -90,7 +96,7 @@ def run():
         query = f"Latest news on: {question}"
         context = search.search_news(query=query, max_results=3)
         
-        result = pricer.get_probability(question, context)
+        result = pricer.get_probability(question, context, active_rules=active_rules_text)
         p_llm = result.get('probability', 0.5)
         reasoning = result.get('reasoning', '')
         

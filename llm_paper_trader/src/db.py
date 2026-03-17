@@ -56,6 +56,28 @@ class DB:
                     FOREIGN KEY (market_id) REFERENCES markets(market_id)
                 )
             ''')
+            
+            # Trading Rules (Memory)
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS trading_rules (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    rule_text TEXT,
+                    domain TEXT,
+                    weight REAL,
+                    created_at DATETIME
+                )
+            ''')
+            
+            # Reflection Logs (State)
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS reflection_logs (
+                    trade_id INTEGER PRIMARY KEY,
+                    pnl_at_reflection REAL,
+                    reflected_at DATETIME,
+                    FOREIGN KEY (trade_id) REFERENCES paper_trades(id)
+                )
+            ''')
+            
             conn.commit()
 
     def save_market(self, market_id: str, title: str, resolution_date: str, volume: float, question: str, exchange: str = 'POLYMARKET'):
@@ -105,3 +127,47 @@ class DB:
                 WHERE id = ?
             ''', (status, pnl, trade_id))
             conn.commit()
+
+    def save_trading_rule(self, rule_text: str, domain: str, weight: float):
+        with self._get_conn() as conn:
+            conn.execute('''
+                INSERT INTO trading_rules (rule_text, domain, weight, created_at)
+                VALUES (?, ?, ?, ?)
+            ''', (rule_text, domain, weight, datetime.utcnow().isoformat()))
+            conn.commit()
+
+    def get_top_trading_rules(self, limit: int = 10):
+        with self._get_conn() as conn:
+            cursor = conn.execute("SELECT * FROM trading_rules ORDER BY weight DESC LIMIT ?", (limit,))
+            return [dict(row) for row in cursor.fetchall()]
+
+    def log_reflection(self, trade_id: int, pnl_at_reflection: float):
+        with self._get_conn() as conn:
+            conn.execute('''
+                INSERT INTO reflection_logs (trade_id, pnl_at_reflection, reflected_at)
+                VALUES (?, ?, ?)
+            ''', (trade_id, pnl_at_reflection, datetime.utcnow().isoformat()))
+            conn.commit()
+
+    def get_unreflected_losing_trades(self, loss_threshold: float = -10.0, limit: int = 5):
+        # We need to join paper_trades with markets to get context, and filter out already reflected trades
+        with self._get_conn() as conn:
+            cursor = conn.execute('''
+                SELECT pt.*, m.question, m.title, m.exchange 
+                FROM paper_trades pt
+                JOIN markets m ON pt.market_id = m.market_id
+                LEFT JOIN reflection_logs rl ON pt.id = rl.trade_id
+                WHERE rl.trade_id IS NULL AND pt.pnl <= ?
+                ORDER BY pt.pnl ASC
+                LIMIT ?
+            ''', (loss_threshold, limit))
+            return [dict(row) for row in cursor.fetchall()]
+            
+    def apply_temporal_decay(self, decay_factor: float = 0.9, prune_threshold: float = 2.0):
+        with self._get_conn() as conn:
+            # Decay all weights
+            conn.execute("UPDATE trading_rules SET weight = weight * ?", (decay_factor,))
+            # Delete weak rules
+            conn.execute("DELETE FROM trading_rules WHERE weight < ?", (prune_threshold,))
+            conn.commit()
+
