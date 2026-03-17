@@ -60,7 +60,7 @@ def eval_window(args):
         if c > 0.25:
             ts = test["timestamp"].iloc[j].strftime("%Y-%m-%d %H:%M")
             pnl = float(test["fwd_ret_8"].iloc[j] - 0.0005) * 100.0
-            trades.append({"timestamp": ts, "conviction": round(c, 3), "pnl_pct": round(pnl, 2)})
+            trades.append({"timestamp": ts, "conviction": round(float(c), 3), "pnl_pct": round(float(pnl), 2)})
             
     return trades
 
@@ -77,7 +77,7 @@ def evaluate(df: pd.DataFrame, feat_cols: list[str]) -> dict:
             
     net = sum(x["pnl_pct"] for x in all_trades) if all_trades else 0.0
     win_rate = sum(x["pnl_pct"] > 0 for x in all_trades) / len(all_trades) if all_trades else 0
-    return {"trades": len(all_trades), "net_pct": round(net, 2), "win_rate": round(win_rate * 100, 2), "ledger": all_trades}
+    return {"trades": len(all_trades), "net_pct": round(float(net), 2), "win_rate": round(float(win_rate) * 100, 2), "ledger": all_trades}
 
 if __name__ == "__main__":
     df = fetch_and_merge()
