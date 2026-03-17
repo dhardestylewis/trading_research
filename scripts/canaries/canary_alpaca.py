@@ -157,6 +157,22 @@ def score_xle(rich: pd.DataFrame, feat_cols: list[str]) -> dict:
     top_conv = float(sum(proba[-2:])) if len(proba) >= 2 else float(proba[-1])
     fires = top_conv > THRESHOLD
 
+    allocation_scalar = 1.0
+    if fires:
+        # Score the training set to get the empirical probability distribution for this specific regime
+        train_probas = clf.predict_proba(Xp)
+        if train_probas.shape[1] >= 2:
+            train_convs = train_probas[:, -2:].sum(axis=1)
+        else:
+            train_convs = train_probas[:, -1]
+        
+        hist_fires = train_convs[train_convs > THRESHOLD]
+        if len(hist_fires) > 0:
+            # Calculate the mathematical percentile of this conviction vs recent history
+            percentile = float(sum(hist_fires <= top_conv) / len(hist_fires))
+            # Set a floor of 20% of the max cap, so a barely-firing signal still captures 1/5th allocation
+            allocation_scalar = max(0.20, percentile)
+
     return {
         "status": "ok",
         "timestamp": str(latest['timestamp'].iloc[0]),
@@ -164,6 +180,7 @@ def score_xle(rich: pd.DataFrame, feat_cols: list[str]) -> dict:
         "top_conviction": round(top_conv, 4),
         "full_proba": [round(p, 4) for p in proba],
         "fires": fires,
+        "allocation_scalar": round(allocation_scalar, 4),
         "n_train": len(train),
     }
 
@@ -181,7 +198,13 @@ def execute_trade(api, signal: dict, dry_run: bool = False) -> dict:
     try:
         account = api.get_account()
         buying_power = float(account.buying_power)
-        trade_amount = buying_power * CAPITAL_FRACTION
+        
+        # Hard Cap: Never exceed 25% of buying power
+        max_trade_amount = buying_power * CAPITAL_FRACTION
+        
+        # Empirical Scaling: Dynamically scale inside the hard cap based on mathematical model confidence
+        scalar = signal.get("allocation_scalar", 1.0)
+        trade_amount = max_trade_amount * scalar
 
         if trade_amount < 1.0:
             log.warning("Insufficient buying power")
@@ -215,8 +238,8 @@ def execute_trade(api, signal: dict, dry_run: bool = False) -> dict:
                 type='market',
                 time_in_force='day'
             )
-            log.info(f"🟢 BUY {qty} {ASSET} @ ~${signal['latest_close']:.2f} "
-                     f"(conviction={signal['top_conviction']:.3f})")
+            log.info(f"🟢 BUY {qty} {ASSET} (${trade_amount:,.2f}) "
+                     f"[Cap-Scaled {scalar*100:.1f}%, Conv {signal['top_conviction']:.3f}]")
 
         return {
             "action": "buy",
