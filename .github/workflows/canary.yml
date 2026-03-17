@@ -42,6 +42,6 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add reports/canary/ data/artifacts/
+          git add -f reports/canary/ data/artifacts/
           git commit -m "Update canary state and logs [skip ci]" || echo "No changes to commit"
           git push
