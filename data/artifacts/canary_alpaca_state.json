@@ -1,34 +1,38 @@
 {
-  "last_tick": "2026-03-17T15:59:39.835809+00:00",
+  "last_tick": "2026-03-17T16:59:46.991236+00:00",
   "last_signal": {
     "status": "ok",
-    "timestamp": "2026-03-16 14:30:00+00:00",
-    "latest_close": 58.05500030517578,
-    "top_conviction": 0.2174,
+    "timestamp": "2026-03-16 15:30:00+00:00",
+    "latest_close": 57.88999938964844,
+    "top_conviction": 0.3736,
     "full_proba": [
-      "0.095",
-      "0.0966",
-      "0.0795",
-      "0.0715",
-      "0.0837",
-      "0.0939",
-      "0.1099",
-      "0.1524",
-      "0.1168",
-      "0.1006"
+      "0.0533",
+      "0.0462",
+      "0.0334",
+      "0.0608",
+      "0.0833",
+      "0.0683",
+      "0.0802",
+      "0.201",
+      "0.2091",
+      "0.1644"
     ],
-    "fires": false,
-    "allocation_scalar": 1.0,
+    "fires": true,
+    "allocation_scalar": 0.2721,
     "n_train": 500
   },
   "last_trade": {
-    "action": "no_signal"
+    "action": "buy",
+    "order_id": "3c33ee30-647b-42bf-ac4e-bcefdf8c39b5",
+    "qty": 235,
+    "notional": 13630.51,
+    "conviction": 0.3736
   },
   "positions": {
     "XLE": {
-      "open_time": "2026-03-17T00:50:10.816666+00:00",
-      "order_id": "6a9b7d24-2677-47f2-a245-2e8078d24d25",
-      "conviction": 0.2629
+      "open_time": "2026-03-17T16:59:46.991253+00:00",
+      "order_id": "3c33ee30-647b-42bf-ac4e-bcefdf8c39b5",
+      "conviction": 0.3736
     }
   }
 }
