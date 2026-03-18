@@ -10,7 +10,8 @@ jobs:
   run-bot:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Needed to push exactly the updated db.sqlite back to main
+      contents: write # Needed to push the updated db.sqlite back to main
+      models: read    # Required for GitHub Models inference API
       
     steps:
       - name: Checkout Repository
