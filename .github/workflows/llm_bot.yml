@@ -31,7 +31,7 @@ jobs:
       - name: Execute LLM Autonomous Reflexion & Execution Cycle
         working-directory: ./llm_paper_trader
         env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MANIFOLD_API_KEY: ${{ secrets.MANIFOLD_API_KEY }}
           KALSHI_API_KEY: ${{ secrets.KALSHI_API_KEY }}
           KALSHI_PRIVATE_KEY: ${{ secrets.KALSHI_PRIVATE_KEY }}

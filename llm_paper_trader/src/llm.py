@@ -5,13 +5,14 @@ from datetime import datetime, timezone
 class LLMPricer:
     def __init__(self, api_key: str = None):
         import os
-        self.api_key = api_key or os.environ.get("OPENROUTER_API_KEY", "")
-        self.url = "https://openrouter.ai/api/v1/chat/completions"
-        self.model = "qwen/qwen3-next-80b-a3b-instruct:free"
+        # GitHub Models uses a GitHub PAT or GITHUB_TOKEN (auto-injected in Actions)
+        self.api_key = api_key or os.environ.get("GITHUB_TOKEN", os.environ.get("GH_TOKEN", ""))
+        self.url = "https://models.inference.ai.azure.com/chat/completions"
+        self.model = "gpt-4o-mini"  # Free on GitHub Models, strong JSON + reasoning
 
     def get_probability(self, question: str, context: str, active_rules: str = "") -> dict:
         """
-        Asks OpenRouter (Qwen Series) to price the market based on context.
+        Uses GitHub Models to price prediction markets.
         Returns a dict: {"probability": float, "reasoning": str}
         """
         try:
@@ -48,8 +49,6 @@ class LLMPricer:
             
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
-                "HTTP-Referer": "https://github.com/dhardestylewis/trading_research",
-                "X-Title": "LLM Paper Trader",
                 "Content-Type": "application/json"
             }
             
@@ -66,5 +65,5 @@ class LLMPricer:
             }
             
         except Exception as e:
-            print(f"Serverless LLM API Error: {e}")
+            print(f"GitHub Models API Error: {e}")
             return {"probability": 0.5, "reasoning": f"Error: {str(e)}"}
