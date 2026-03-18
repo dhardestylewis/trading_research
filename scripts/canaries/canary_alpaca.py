@@ -213,26 +213,59 @@ def execute_trade(api, signal: dict, dry_run: bool = False) -> dict:
         log.error(f"❌ Order failed: {e}")
         return {"action": "error", "error": str(e)}
 
-def close_expired_positions(api):
+def close_expired_positions(api, df):
     if api is None: return
     try:
         xle_positions = [p for p in api.list_positions() if p.symbol == ASSET]
-        for pos in xle_positions:
-            entry_time = _get_position_open_time(api, pos)
-            if entry_time and (datetime.now(timezone.utc) - entry_time) > timedelta(hours=HORIZON_HOURS):
+        if not xle_positions: return
+
+        pos = xle_positions[0]
+        actual_qty = int(pos.qty)
+
+        state = json.loads(STATE_PATH.read_text()) if STATE_PATH.exists() else {}
+        tranches = state.get("positions", {}).get(ASSET, [])
+        if isinstance(tranches, dict):
+            tranches = [tranches]
+
+        # Use the nth oldest bar in the DataFrame as the market-hour threshold
+        if len(df) < HORIZON_HOURS: return
+        threshold_time = df['timestamp'].iloc[-HORIZON_HOURS].to_pydatetime()
+        if threshold_time.tzinfo is None:
+            threshold_time = threshold_time.replace(tzinfo=timezone.utc)
+
+        qty_to_close = 0
+        active_tranches = []
+
+        for t in tranches:
+            entry_time_str = t.get("open_time")
+            if entry_time_str:
+                entry_time = datetime.fromisoformat(entry_time_str)
+                if entry_time.tzinfo is None:
+                    entry_time = entry_time.replace(tzinfo=timezone.utc)
+                if entry_time <= threshold_time:
+                    qty_to_close += t.get("qty", actual_qty)
+                else:
+                    active_tranches.append(t)
+            else:
+                active_tranches.append(t)
+
+        qty_to_close = min(qty_to_close, actual_qty)
+        if qty_to_close > 0:
+            if qty_to_close == actual_qty:
                 api.close_position(ASSET)
-                pnl = float(pos.unrealized_pl)
-                log.info(f"🔴 CLOSED {ASSET}: PnL=${pnl:.2f}")
-                _log_trade(pos, pnl)
+                log.info(f"🔴 CLOSED ALL {ASSET} (qty={qty_to_close}): PnL=${float(pos.unrealized_pl):.2f}")
+                _log_trade(pos, float(pos.unrealized_pl))
+            else:
+                api.submit_order(symbol=ASSET, qty=qty_to_close, side='sell', type='market', time_in_force='day')
+                pnl_frac = float(pos.unrealized_pl) * (qty_to_close / actual_qty)
+                log.info(f"🔴 CLOSED TRANCHE {ASSET} (qty={qty_to_close}): Est. PnL=${pnl_frac:.2f}")
+                _log_trade(pos, pnl_frac)
+
+            state.setdefault("positions", {})[ASSET] = active_tranches
+            STATE_PATH.write_text(json.dumps(state, indent=2, default=str))
+
     except Exception as e:
         log.error(f"Error closing positions: {e}")
-
-def _get_position_open_time(api, position) -> datetime | None:
-    if STATE_PATH.exists():
-        state = json.loads(STATE_PATH.read_text())
-        open_time = state.get("positions", {}).get(ASSET, {}).get("open_time")
-        if open_time: return datetime.fromisoformat(open_time)
-    return None
 
 def log_signal(signal: dict):
     SIGNAL_LOG.parent.mkdir(parents=True, exist_ok=True)
@@ -256,9 +289,16 @@ def save_state(signal: dict, trade_result: dict):
     state = json.loads(STATE_PATH.read_text()) if STATE_PATH.exists() else {}
     state.update({"last_tick": datetime.now(timezone.utc).isoformat(), "last_signal": signal, "last_trade": trade_result})
     if trade_result.get("action") == "buy":
-        state.setdefault("positions", {})[ASSET] = {
-            "open_time": datetime.now(timezone.utc).isoformat(), "order_id": trade_result.get("order_id"), "conviction": trade_result.get("conviction"),
-        }
+        positions = state.setdefault("positions", {}).get(ASSET, [])
+        if isinstance(positions, dict):
+            positions = [positions]
+        positions.append({
+            "open_time": datetime.now(timezone.utc).isoformat(),
+            "order_id": trade_result.get("order_id"),
+            "conviction": trade_result.get("conviction"),
+            "qty": trade_result.get("qty")
+        })
+        state["positions"][ASSET] = positions
     STATE_PATH.write_text(json.dumps(state, indent=2, default=str))
 
 def show_status(api):
@@ -282,7 +322,14 @@ def tick(api, dry_run: bool = False):
     log_signal(signal)
     if signal['status'] != 'ok': return log.warning(f"Status: {signal['status']}")
     log.info(f"  {'🟢 FIRE!' if signal['fires'] else '· No signal'} Conviction: {signal['top_conviction']:.3f} | Cap-Scaler: {signal['allocation_scalar']*100:.1f}%")
-    close_expired_positions(api)
+
+    if api and not dry_run:
+        clock = api.get_clock()
+        if not clock.is_open:
+            log.info("💤 Market is closed. Skipping trade execution.")
+            return
+
+    close_expired_positions(api, df)
     trade_result = execute_trade(api, signal, dry_run=dry_run)
     save_state(signal, trade_result)
 
