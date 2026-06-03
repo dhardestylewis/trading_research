@@ -1,32 +1,28 @@
 {
-  "last_tick": "2026-06-03T19:56:48.822431+00:00",
+  "last_tick": "2026-06-03T21:17:02.444050+00:00",
   "last_signal": {
     "status": "ok",
     "timestamp": "2026-06-02 18:30:00+00:00",
     "latest_close": 58.100101470947266,
-    "top_conviction": 0.2516,
+    "top_conviction": 0.2385,
     "full_proba": [
-      "0.0144",
-      "0.0398",
-      "0.0748",
-      "0.125",
-      "0.0629",
-      "0.049",
-      "0.0976",
-      "0.285",
-      "0.1838",
-      "0.0678"
+      "0.0251",
+      "0.0512",
+      "0.0861",
+      "0.1341",
+      "0.0755",
+      "0.0575",
+      "0.1025",
+      "0.2296",
+      "0.1651",
+      "0.0734"
     ],
-    "fires": true,
-    "allocation_scalar": 0.2,
+    "fires": false,
+    "allocation_scalar": 1.0,
     "n_train": 500
   },
   "last_trade": {
-    "action": "buy",
-    "order_id": "c3ffbc36-eb29-42b8-a747-4d329f4da289",
-    "qty": 294,
-    "notional": 17138.19,
-    "conviction": 0.2516
+    "action": "no_signal"
   },
   "positions": {
     "XLE": {
