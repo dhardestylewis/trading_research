@@ -1,5 +1,5 @@
 {
-  "last_tick": "2026-07-08T20:08:16.973629+00:00",
+  "last_tick": "2026-07-08T20:37:22.449959+00:00",
   "last_signal": {
     "status": "ok",
     "timestamp": "2026-07-07 18:30:00+00:00",
@@ -23,15 +23,15 @@
   },
   "last_trade": {
     "action": "buy",
-    "order_id": "89df44ad-1b8a-4b1c-b214-eee662b897ad",
-    "qty": 427,
-    "notional": 23408.68,
+    "order_id": "c463d857-2471-404a-ae5d-32e98619b0c8",
+    "qty": 387,
+    "notional": 21229.53,
     "conviction": 0.3337
   },
   "positions": {
     "XLE": {
-      "open_time": "2026-07-08T20:08:16.973649+00:00",
-      "order_id": "89df44ad-1b8a-4b1c-b214-eee662b897ad",
+      "open_time": "2026-07-08T20:37:22.449976+00:00",
+      "order_id": "c463d857-2471-404a-ae5d-32e98619b0c8",
       "conviction": 0.3337
     }
   }
