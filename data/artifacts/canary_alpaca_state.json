@@ -1,29 +1,28 @@
 {
-  "last_tick": "2026-07-10T15:29:13.740720+00:00",
+  "last_tick": "2026-07-10T16:27:02.571459+00:00",
   "last_signal": {
     "status": "ok",
-    "timestamp": "2026-07-09 13:30:00+00:00",
-    "latest_close": 55.14500045776367,
-    "top_conviction": 0.2522,
+    "timestamp": "2026-07-09 14:30:00+00:00",
+    "latest_close": 55.064998626708984,
+    "top_conviction": 0.1727,
     "full_proba": [
-      "0.0128",
-      "0.0132",
-      "0.0553",
-      "0.1471",
-      "0.2938",
-      "0.1102",
-      "0.071",
-      "0.0445",
-      "0.0473",
-      "0.2049"
+      "0.0455",
+      "0.0468",
+      "0.1056",
+      "0.188",
+      "0.1702",
+      "0.1034",
+      "0.0968",
+      "0.0708",
+      "0.0505",
+      "0.1223"
     ],
-    "fires": true,
-    "allocation_scalar": 0.2,
+    "fires": false,
+    "allocation_scalar": 1.0,
     "n_train": 500
   },
   "last_trade": {
-    "action": "error",
-    "error": "potential wash trade detected. use complex orders"
+    "action": "no_signal"
   },
   "positions": {
     "XLE": {
